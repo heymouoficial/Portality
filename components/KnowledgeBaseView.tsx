@@ -11,6 +11,7 @@ const KnowledgeBaseView: React.FC = () => {
     const [clipboardTitle, setClipboardTitle] = useState('');
 
     const [isUploading, setIsUploading] = useState(false);
+    const [statusLog, setStatusLog] = useState<string>('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -27,20 +28,23 @@ const KnowledgeBaseView: React.FC = () => {
         setIsUploading(true);
 
         setTimeout(async () => {
-            await ragService.ingestDocument(clipboardTitle, clipboardContent, 'clipboard');
+            await ragService.ingestDocument(clipboardTitle, clipboardContent, 'clipboard', 'text', (status) => setStatusLog(status));
             setClipboardTitle('');
             setClipboardContent('');
             setIsUploading(false);
+            setStatusLog('');
             loadSources();
-        }, 1000);
+        }, 500);
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setIsUploading(true);
             const file = e.target.files[0];
-            await ragService.ingestFile(file);
+            setStatusLog('Initializing upload stream...');
+            await ragService.ingestFile(file, (status) => setStatusLog(status));
             setIsUploading(false);
+            setStatusLog('');
             loadSources();
         }
     };
@@ -146,34 +150,48 @@ const KnowledgeBaseView: React.FC = () => {
                     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-8 duration-500">
 
                         {/* Dropzone Area */}
-                        <div
-                            onClick={() => fileInputRef.current?.click()}
-                            className="group cursor-pointer p-10 rounded-[28px] bg-[#0A0A0A] border-2 border-dashed border-white/10 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all relative overflow-hidden shadow-inner"
-                        >
-                            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 mix-blend-overlay pointer-events-none"></div>
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileUpload}
-                                className="hidden"
-                                accept=".pdf,.doc,.docx,.txt,.md,.json"
-                            />
-
-                            <div className="flex flex-col items-center justify-center gap-4 relative z-10 text-center">
-                                <div className="w-16 h-16 rounded-2xl bg-[#121212] border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-xl">
-                                    {isUploading ? <RefreshCw size={28} className="animate-spin text-emerald-500" /> : <Upload size={28} className="text-gray-400 group-hover:text-emerald-500" />}
+                        {/* Dropzone Area or Log Terminal */}
+                        {isUploading ? (
+                            <div className="p-10 rounded-[28px] bg-[#0A0A0A] border border-emerald-500/20 relative overflow-hidden flex flex-col items-center justify-center min-h-[240px]">
+                                <div className="absolute inset-0 bg-emerald-500/5 animate-pulse pointer-events-none"></div>
+                                <RefreshCw size={32} className="text-emerald-500 animate-spin mb-4" />
+                                <h3 className="text-lg font-bold text-white mb-2">Procesando Conocimiento</h3>
+                                <div className="w-full max-w-md bg-[#121212] rounded-lg border border-white/10 p-3 font-mono text-xs text-emerald-400/80 shadow-inner">
+                                    <span className="mr-2 text-gray-500">user@aureon:~$</span>
+                                    <span className="typing-effect">{statusLog}</span>
+                                    <span className="animate-blink ml-1">_</span>
                                 </div>
-                                <div>
-                                    <h3 className="text-lg font-bold text-white mb-1 group-hover:text-emerald-400 transition-colors">Importar Documentos</h3>
-                                    <p className="text-xs text-gray-500">Arrastra o haz click para vectorizar.</p>
-                                    <div className="flex gap-2 justify-center mt-3 opacity-60">
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-gray-400">PDF</span>
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-gray-400">DOCX</span>
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-gray-400">MD</span>
+                            </div>
+                        ) : (
+                            <div
+                                onClick={() => fileInputRef.current?.click()}
+                                className="group cursor-pointer p-10 rounded-[28px] bg-[#0A0A0A] border-2 border-dashed border-white/10 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all relative overflow-hidden shadow-inner"
+                            >
+                                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 mix-blend-overlay pointer-events-none"></div>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileUpload}
+                                    className="hidden"
+                                    accept=".pdf,.doc,.docx,.txt,.md,.json"
+                                />
+
+                                <div className="flex flex-col items-center justify-center gap-4 relative z-10 text-center">
+                                    <div className="w-16 h-16 rounded-2xl bg-[#121212] border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-xl">
+                                        <Upload size={28} className="text-gray-400 group-hover:text-emerald-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-white mb-1 group-hover:text-emerald-400 transition-colors">Importar Documentos</h3>
+                                        <p className="text-xs text-gray-500">Arrastra o haz click para vectorizar.</p>
+                                        <div className="flex gap-2 justify-center mt-3 opacity-60">
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-gray-400">PDF</span>
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-gray-400">DOCX</span>
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-gray-400">MD</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Source List */}
                         <div className="flex flex-col gap-3">
@@ -225,9 +243,17 @@ const KnowledgeBaseView: React.FC = () => {
                         </p>
 
                         <div className="mt-8 flex gap-3">
-                            <button className="px-5 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-gray-400 hover:text-white hover:border-white/30 transition-all">Supabase</button>
-                            <button className="px-5 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-gray-400 hover:text-white hover:border-white/30 transition-all">Notion</button>
-                            <button className="px-5 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-gray-400 hover:text-white hover:border-white/30 transition-all">Stripe</button>
+                            <button className="px-5 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-400 flex items-center gap-2 cursor-default">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                                Supabase
+                            </button>
+                            <button className="px-5 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-400 flex items-center gap-2 cursor-default">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                                Notion
+                            </button>
+                            <button className="px-5 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-gray-400 hover:text-white hover:border-white/30 transition-all opacity-50 cursor-not-allowed">
+                                Stripe
+                            </button>
                         </div>
                     </div>
                 )}

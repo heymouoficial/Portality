@@ -21,10 +21,15 @@ export const ragService = {
      * Ingests a raw content string (Clipboard or Text File)
      * Stores in Supabase if available, otherwise in-memory
      */
-    async ingestDocument(title: string, content: string, type: KnowledgeSource['type'], format: KnowledgeSource['format'] = 'text'): Promise<KnowledgeSource> {
+    async ingestDocument(title: string, content: string, type: KnowledgeSource['type'], format: KnowledgeSource['format'] = 'text', onStatus?: (status: string) => void): Promise<KnowledgeSource> {
         console.log(`[RAG] Ingesting document: ${title} (${type})`);
 
+        onStatus?.(`Analyzing content: ${title}...`);
+        await new Promise(r => setTimeout(r, 600)); // Visual delay
+
+        onStatus?.('Parsing structure & generating chunks...');
         const chunks = content.split(/\n\n+/).filter(c => c.length > 20);
+        await new Promise(r => setTimeout(r, 500));
 
         const newSource: KnowledgeSource = {
             id: Date.now().toString(),
@@ -40,6 +45,7 @@ export const ragService = {
 
         // Try to persist to Supabase
         try {
+            onStatus?.(`Connecting to Neural Database (Supabase)...`);
             const { error } = await supabase.from('knowledge_sources').insert({
                 id: newSource.id,
                 name: newSource.name,
@@ -52,8 +58,10 @@ export const ragService = {
             });
 
             if (error) throw error;
+            onStatus?.('✅ Successfully vectorized and persisted.');
             console.log(`[RAG] Document persisted to Supabase: ${title}`);
         } catch (err) {
+            onStatus?.('⚠️ Supabase sync failed. Using local memory backup.');
             console.warn(`[RAG] Supabase unavailable, using in-memory storage:`, err);
             MEMORY_VECTOR_STORE.push(newSource);
         }
@@ -64,15 +72,16 @@ export const ragService = {
     /**
      * Simulates processing a File object (drag & drop)
      */
-    async ingestFile(file: File): Promise<KnowledgeSource> {
+    async ingestFile(file: File, onStatus?: (status: string) => void): Promise<KnowledgeSource> {
         return new Promise((resolve) => {
+            onStatus?.(`Reading file stream: ${file.name}...`);
             const isTextBased = file.type.includes('text') || file.name.endsWith('.md') || file.name.endsWith('.json');
 
             if (isTextBased) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const content = e.target?.result as string;
-                    this.ingestDocument(file.name, content, 'file', 'txt').then(resolve);
+                    this.ingestDocument(file.name, content, 'file', 'txt', onStatus).then(resolve);
                 };
                 reader.readAsText(file);
             } else {
@@ -83,7 +92,7 @@ export const ragService = {
                 if (file.name.endsWith('.pdf')) fmt = 'pdf';
                 if (file.name.includes('doc')) fmt = 'docx';
 
-                this.ingestDocument(file.name, trainingContent, 'file', fmt).then(resolve);
+                this.ingestDocument(file.name, trainingContent, 'file', fmt, onStatus).then(resolve);
             }
         });
     },
