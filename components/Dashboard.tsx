@@ -106,6 +106,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, leads, notionDocs, t
                     </div>
 
                     <div className="grid gap-3">
+                        {!trainingMode?.active && notionDocs.length === 0 && (
+                            <div className="p-8 text-center border-2 border-dashed border-white/5 rounded-[24px]">
+                                <p className="text-sm text-gray-500 font-medium">No documents synchronized yet.</p>
+                                <p className="text-xs text-gray-600 mt-1">Connect Notion or ingest files to see them here.</p>
+                            </div>
+                        )}
+
                         {notionDocs.map(doc => (
                             <div key={doc.id} className="group relative p-4 rounded-[24px] liquid-glass hover:bg-white/[0.05] transition-all cursor-pointer overflow-hidden border-transparent hover:border-white/10">
                                 {/* Internal Shine */}
@@ -152,12 +159,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, leads, notionDocs, t
 
                         <div className="flex flex-col gap-5 relative z-10">
                             {[
-                                { id: 'wa', name: 'WhatsApp Business', icon: <MessageCircle size={18} className="icon-duotone" />, color: 'bg-[#25D366]', status: 'Connected' },
-                                { id: 'tg', name: 'Telegram Bot', icon: <Send size={18} className="icon-duotone" />, color: 'bg-[#229ED9]', status: 'Active' },
-                                { id: 'st', name: 'Stripe Payments', icon: <CreditCard size={18} className="icon-duotone" />, color: 'bg-[#635BFF]', status: 'Syncing' },
-                                { id: 'gm', name: 'Google Workspace', icon: <Mail size={18} className="icon-duotone" />, color: 'bg-[#EA4335]', status: 'Connected' },
+                                { id: 'sb', name: 'Supabase Database', icon: <Database size={18} className="icon-duotone" />, color: 'bg-[#3ECF8E]', status: 'Active', toggled: true },
+                                { id: 'nt', name: 'Notion Workspace', icon: <FileText size={18} className="icon-duotone" />, color: 'bg-white text-black', status: 'Active', toggled: true },
+                                { id: 'wa', name: 'WhatsApp Business', icon: <MessageCircle size={18} className="icon-duotone" />, color: 'bg-gray-700 opacity-50', status: 'Próximamente', toggled: false },
+                                { id: 'st', name: 'Stripe Payments', icon: <CreditCard size={18} className="icon-duotone" />, color: 'bg-gray-700 opacity-50', status: 'Próximamente', toggled: false },
+                                { id: 'gm', name: 'Google Workspace', icon: <Mail size={18} className="icon-duotone" />, color: 'bg-gray-700 opacity-50', status: 'Próximamente', toggled: false },
                             ].map((app, i) => (
-                                <div key={app.id} className="group flex items-center justify-between">
+                                <div key={app.id} className={`group flex items-center justify-between ${!app.toggled ? 'opacity-60 grayscale' : ''}`}>
                                     <div className="flex items-center gap-4">
                                         <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-lg ${app.color} transition-transform group-hover:scale-110`}>
                                             {app.icon}
@@ -165,15 +173,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, leads, notionDocs, t
                                         <div className="flex flex-col">
                                             <span className="text-sm font-semibold text-gray-200">{app.name}</span>
                                             <span className="text-[10px] text-gray-500 flex items-center gap-1">
-                                                <span className={`w-1.5 h-1.5 rounded-full ${app.status === 'Syncing' ? 'bg-amber-500 animate-pulse' : 'bg-green-500'} shadow-[0_0_5px_currentColor]`}></span>
+                                                <span className={`w-1.5 h-1.5 rounded-full ${app.status === 'Active' ? 'bg-green-500' : 'bg-gray-600'} shadow-[0_0_5px_currentColor]`}></span>
                                                 {app.status}
                                             </span>
                                         </div>
                                     </div>
 
                                     {/* Toggle Switch Liquid */}
-                                    <div className={`w-11 h-6 rounded-full relative transition-all cursor-pointer border ${app.status === 'Connected' || app.status === 'Active' ? 'bg-theme-primary/20 border-theme-primary/50' : 'bg-white/5 border-white/10'}`}>
-                                        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${app.status === 'Connected' || app.status === 'Active' ? 'right-1 bg-theme-primary shadow-[0_0_8px_var(--primary)]' : 'left-1 bg-gray-500'}`}></div>
+                                    <div className={`w-11 h-6 rounded-full relative transition-all border ${app.toggled ? 'bg-theme-primary/20 border-theme-primary/50' : 'bg-white/5 border-white/10'}`}>
+                                        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${app.toggled ? 'right-1 bg-theme-primary shadow-[0_0_8px_var(--primary)]' : 'left-1 bg-gray-500'}`}></div>
                                     </div>
                                 </div>
                             ))}

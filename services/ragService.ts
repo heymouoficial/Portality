@@ -229,9 +229,13 @@ export const ragService = {
                 }));
             }
 
-            // No cached data - system in training mode
-            TRAINING_MODE_ACTIVE = true;
-            TRAINING_MODE_REASON = 'Sin datos sincronizados. Conecta tu workspace de Notion.';
+            // No cached data but connected - system is ready, just empty
+            // We do NOT set training mode active here if we want to show "0 documents" instead of "Configuring..."
+            // However, if we want to show "Training Mode" until data is ingested, we keep it true.
+            // User said: "organizar para que muestre información desde su creación en CERO."
+            // This implies 0 state is valid.
+            console.log('[RAG] Connected to DB but no docs found - Zero State');
+            TRAINING_MODE_ACTIVE = false;
             return [];
 
         } catch (err) {
