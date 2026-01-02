@@ -30,66 +30,60 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, leads, notionDocs, t
 
                 {/* F1: Financial Pulse / System Pulse (Context Aware) */}
                 {/* Domino: Delay 0 */}
-                <section className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-0 relative overflow-hidden rounded-[30px] p-6 liquid-glass group">
+                {/* Elevat Ecosystem / System Pulse */}
+                {/* Domino: Delay 0 */}
+                <section className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-0 relative overflow-hidden rounded-[30px] p-6 liquid-glass group md:col-span-2 xl:col-span-2">
 
                     {/* Liquid Background Gradient (Subtle) */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent opacity-100 pointer-events-none"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.05] to-transparent opacity-100 pointer-events-none"></div>
 
                     {/* GRAPHIC ENGINE: Background Icon */}
-                    <div className="absolute -right-6 -bottom-12 text-theme-primary opacity-[0.05] group-hover:opacity-[0.1] transition-opacity duration-700 pointer-events-none rotate-[-12deg]">
-                        <Activity size={220} strokeWidth={1} />
+                    <div className="absolute -right-6 -bottom-12 text-emerald-500 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity duration-700 pointer-events-none rotate-[-12deg]">
+                        <Radar size={220} strokeWidth={1} />
                     </div>
 
-                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-theme-primary opacity-20 blur-[50px] rounded-full group-hover:opacity-30 transition-opacity duration-500"></div>
+                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500 opacity-20 blur-[50px] rounded-full group-hover:opacity-30 transition-opacity duration-500"></div>
 
                     <div className="relative z-10">
                         <div className="flex justify-between items-start mb-6">
                             <div className="flex items-center gap-3">
-                                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-theme-primary shadow-glass-inset">
-                                    <Wallet size={22} strokeWidth={1.5} className="icon-duotone" />
+                                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-emerald-400 shadow-glass-inset">
+                                    <Database size={22} strokeWidth={1.5} className="icon-duotone" />
                                 </div>
                                 <div>
                                     <h2 className="text-base font-semibold text-white tracking-tight">
-                                        {user.id === 'moises' ? 'System Health' : 'Financial Pulse'}
+                                        Ecosistema Elevat
                                     </h2>
-                                    <p className="text-xs text-gray-400 font-medium tracking-wide">Tiempo Real</p>
+                                    <p className="text-xs text-emerald-500/80 font-medium tracking-wide">Sincronización Neural</p>
                                 </div>
                             </div>
-                            <span className="flex items-center gap-1.5 text-xs font-bold text-theme-secondary bg-theme-secondary/10 px-3 py-1.5 rounded-full border border-theme-secondary/20 shadow-[0_0_10px_var(--secondary-dim)]">
-                                <TrendingUp size={14} strokeWidth={2} />
-                                {user.id === 'moises' ? '99.9%' : '+12%'}
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                                <Check size={14} strokeWidth={2} />
+                                ONLINE
                             </span>
                         </div>
 
-                        <div className="flex flex-col gap-1 mb-8">
-                            <span className="text-sm font-medium text-gray-400">
-                                {user.id === 'moises' ? 'CPU Load (Vercel/Supabase)' : 'Ingresos Hoy (Stripe)'}
-                            </span>
-                            <div className="flex items-baseline gap-1">
-                                <span className="text-5xl font-bold tracking-tighter text-white drop-shadow-md">
-                                    {user.id === 'moises' ? '24' : '$1,240'}
-                                </span>
-                                <span className="text-3xl font-medium text-gray-500">
-                                    {user.id === 'moises' ? '%' : '.00'}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Chart Visualization */}
-                        <div className="flex items-end justify-between gap-2 h-16">
-                            {[0.3, 0.5, 0.35, 0.6, 0.45, 0.7].map((h, i) => (
-                                <div key={i} className="w-full bg-white/5 rounded-full relative overflow-hidden group/bar">
-                                    <div
-                                        className="absolute bottom-0 left-0 right-0 bg-white/20 rounded-full transition-all duration-500 group-hover/bar:bg-white/30 backdrop-blur-sm"
-                                        style={{ height: `${h * 100}%` }}
-                                    ></div>
-                                </div>
-                            ))}
-                            {/* Active Bar with Shining Effect - Liquid Accent */}
-                            <div className="w-full h-full relative rounded-full overflow-hidden shadow-neon">
-                                <div className="absolute inset-0 bg-gradient-to-t from-theme-primary to-theme-secondary opacity-90"></div>
-                                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent opacity-0 animate-[shimmer_2s_infinite]"></div>
-                            </div>
+                        {/* Integration Grid - Logic based on notionDocs */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8">
+                            {[
+                                { id: 'hub', label: 'Hub Operativo', icon: '🎯', key: 'HUB' },
+                                { id: 'clients', label: 'Clientes 2026', icon: '👥', key: 'Clientes' },
+                                { id: 'tasks', label: 'Tareas Ops', icon: '✅', key: 'Tareas' },
+                                { id: 'team', label: 'Equipo', icon: '🧠', key: 'Equipo' }
+                            ].map((item) => {
+                                // Check if this db exists in notionDocs
+                                const isActive = notionDocs.some(doc => doc.title.includes(item.key));
+                                return (
+                                    <div key={item.id} className={`p-4 rounded-2xl border transition-all duration-500 ${isActive ? 'bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]' : 'bg-white/5 border-white/5 opacity-50 grayscale'}`}>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="text-xl">{item.icon}</span>
+                                            <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-gray-600'}`}></div>
+                                        </div>
+                                        <h4 className="text-xs font-bold text-gray-200">{item.label}</h4>
+                                        <p className="text-[10px] text-gray-500 mt-1">{isActive ? 'Sincronizado' : 'Pendiente'}</p>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </section>
