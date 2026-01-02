@@ -1,6 +1,6 @@
 import React from 'react';
 import { Wallet, TrendingUp, Check, Radar, MoreHorizontal, CalendarClock, FileText, ArrowUpRight, Database, Zap, MessageCircle, Send, CreditCard, Mail, Activity, Hourglass, AlertTriangle } from 'lucide-react';
-import { Task, Lead, NotionPage, UserProfile } from '../types';
+import { Task, Lead, NotionPage, UserProfile, ViewState } from '../types';
 
 interface DashboardProps {
     user: UserProfile;
@@ -8,9 +8,10 @@ interface DashboardProps {
     leads: Lead[];
     notionDocs: NotionPage[];
     trainingMode?: { active: boolean; reason: string };
+    onNavigate: (view: ViewState) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, tasks, leads, notionDocs, trainingMode }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, tasks, leads, notionDocs, trainingMode, onNavigate }) => {
     return (
         <main className="px-4 sm:px-6 lg:px-8 pb-28 max-w-7xl mx-auto">
 
@@ -93,10 +94,19 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, leads, notionDocs, t
                 <section className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
                     <div className="flex items-center justify-between px-1">
                         <h3 className="text-lg font-semibold text-white">Portality Intelligence</h3>
-                        <span className="text-[10px] font-bold text-gray-400 bg-white/5 px-2 py-1 rounded-full border border-white/5 flex items-center gap-1">
-                            <Database size={12} className="text-emerald-500 icon-duotone" />
-                            RAG Vectorial
-                        </span>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => onNavigate('knowledge')}
+                                className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 rounded-full border border-emerald-500/10 flex items-center gap-1.5 transition-all"
+                            >
+                                <Zap size={12} strokeWidth={2} />
+                                Vectorizar
+                            </button>
+                            <span className="text-[10px] font-bold text-gray-400 bg-white/5 px-2 py-1 rounded-full border border-white/5 flex items-center gap-1">
+                                <Database size={12} className="text-emerald-500 icon-duotone" />
+                                RAG
+                            </span>
+                        </div>
                     </div>
 
                     <div className="grid gap-3">
@@ -217,10 +227,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, leads, notionDocs, t
                                 <div className="flex gap-3 mt-5">
                                     {/* Shining Button */}
                                     <div className="relative group/btn w-full">
-                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-700 to-gray-500 rounded-xl blur opacity-30 group-hover/btn:opacity-60 transition duration-200"></div>
-                                        <button className="relative w-full bg-white text-black font-semibold text-sm py-3 px-4 rounded-xl shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2">
-                                            <span>Unirse (Meet)</span>
-                                            <ArrowUpRight size={14} />
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl blur opacity-30 group-hover/btn:opacity-60 transition duration-200"></div>
+                                        <button
+                                            onClick={() => window.open('https://meet.new', '_blank')}
+                                            className="relative w-full bg-white text-black font-semibold text-sm py-3 px-4 rounded-xl shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <span className="text-indigo-900">Crear Reunión (Meet)</span>
+                                            <ArrowUpRight size={14} className="text-indigo-700" />
                                         </button>
                                     </div>
                                 </div>
@@ -238,55 +251,36 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, leads, notionDocs, t
                     </div>
 
                     <div className="flex flex-col gap-3">
-                        {tasks.slice(0, 3).map((task, i) => (
-                            <div key={task.id} className={`group relative flex items-center gap-4 p-4 rounded-[20px] liquid-glass hover:bg-white/5 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4`} style={{ animationDelay: `${500 + (i * 100)}ms` }}>
-                                <div className="relative flex-shrink-0">
-                                    <input
-                                        type="checkbox"
-                                        defaultChecked={task.completed}
-                                        className={`peer appearance-none w-6 h-6 border-2 rounded-full transition-all cursor-pointer ${task.priority === 'high' ? 'border-theme-primary/70' : 'border-gray-600'} checked:bg-theme-primary checked:border-transparent checked:shadow-neon`}
-                                    />
-                                    <Check className="w-3.5 h-3.5 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" strokeWidth={3} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-base font-medium text-gray-200 truncate group-hover:text-theme-primary transition-colors">{task.title}</p>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                        {task.priority === 'high' && <span className="text-[10px] font-bold text-amber-400 tracking-wide">ALTA PRIORIDAD</span>}
-                                        {task.tags?.map(tag => (
-                                            <span key={tag} className="text-[10px] text-gray-500 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">{tag}</span>
-                                        ))}
+                        {tasks
+                            .filter(t => !t.completed)
+                            .sort((a, b) => {
+                                const priorityOrder = { high: 0, medium: 1, low: 2 };
+                                return priorityOrder[a.priority as keyof typeof priorityOrder] - priorityOrder[b.priority as keyof typeof priorityOrder];
+                            })
+                            .slice(0, 3)
+                            .map((task, i) => (
+                                <div key={task.id} className={`group relative flex items-center gap-4 p-4 rounded-[20px] liquid-glass hover:bg-white/5 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4`} style={{ animationDelay: `${500 + (i * 100)}ms` }}>
+                                    <div className="relative flex-shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            defaultChecked={task.completed}
+                                            className={`peer appearance-none w-6 h-6 border-2 rounded-full transition-all cursor-pointer ${task.priority === 'high' ? 'border-theme-primary/70' : 'border-gray-600'} checked:bg-theme-primary checked:border-transparent checked:shadow-neon`}
+                                        />
+                                        <Check className="w-3.5 h-3.5 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" strokeWidth={3} />
                                     </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                {/* Lead Radar (Only for Andres/Christian) */}
-                {(user.id === 'andrea' || user.id === 'christian') && (
-                    <section className="mt-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-700">
-                        <div className="flex items-center justify-between px-1 mb-3">
-                            <h3 className="text-lg font-semibold text-white">Lead Radar (CRM)</h3>
-                            <Radar className="w-5 h-5 text-theme-primary animate-spin-slow icon-duotone" strokeWidth={1.5} style={{ animationDuration: '4s' }} />
-                        </div>
-                        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 pl-1">
-                            {leads.map(lead => (
-                                <div key={lead.id} className="min-w-[170px] p-4 rounded-[24px] liquid-glass flex flex-col gap-3 transition-all hover:translate-y-[-4px] hover:shadow-[0_10px_20px_rgba(0,0,0,0.3)] group cursor-pointer border-transparent hover:border-white/10">
-                                    <div className="flex items-start justify-between">
-                                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-bold text-white shadow-lg ${lead.color} group-hover:scale-110 transition-transform`}>
-                                            {lead.initials}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-base font-medium text-gray-200 truncate group-hover:text-theme-primary transition-colors">{task.title}</p>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            {task.priority === 'high' && <span className="text-[10px] font-bold text-amber-400 tracking-wide">ALTA PRIORIDAD</span>}
+                                            {task.tags?.map(tag => (
+                                                <span key={tag} className="text-[10px] text-gray-500 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">{tag}</span>
+                                            ))}
                                         </div>
-                                        <span className="text-[9px] font-bold uppercase tracking-wider text-theme-secondary bg-theme-secondary/10 px-2 py-0.5 rounded-full border border-theme-secondary/10">{lead.status}</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-base font-bold text-white leading-tight">{lead.name}</p>
-                                        <p className="text-xs text-gray-500 mt-1 truncate">{lead.detail}</p>
                                     </div>
                                 </div>
                             ))}
-                        </div>
-                    </section>
-                )}
+                    </div>
+                </section>
 
                 {/* Branding Footer - Full Width */}
             </div>{/* End Responsive Grid */}

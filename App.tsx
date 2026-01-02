@@ -252,7 +252,7 @@ function App() {
 
             {/* Main Content Area - Scrollable */}
             <div className="relative z-10 flex-1 overflow-y-auto no-scrollbar pb-[100px]">
-                {currentView === 'home' && <Dashboard user={currentUser} tasks={tasks} leads={leads} notionDocs={notionDocs} trainingMode={trainingMode} />}
+                {currentView === 'home' && <Dashboard user={currentUser} tasks={tasks} leads={leads} notionDocs={notionDocs} trainingMode={trainingMode} onNavigate={(view) => setCurrentView(view)} />}
                 {currentView === 'board' && <KanbanView tasks={tasks} onUpdateTaskStatus={handleUpdateTaskStatus} onAddTask={handleAddTask} />}
                 {currentView === 'report' && <ReportView />}
                 {currentView === 'knowledge' && <KnowledgeBaseView />}
