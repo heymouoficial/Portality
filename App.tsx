@@ -23,7 +23,10 @@ const PROFILES: Record<string, UserProfile> = {
 const EMAIL_TO_PROFILE: Record<string, string> = {
     'andrea@elevat.io': 'andrea',
     'christian@elevat.io': 'christian',
-    'moises@elevat.io': 'moises'
+    'moises@elevat.io': 'moises',
+    'andreachimarasonlinebusiness@gmail.com': 'andrea',
+    'christomoreno6@gmail.com': 'christian',
+    'moshequantum@gmail.com': 'moises'
 };
 
 const USER_DATA_TASKS = {
@@ -111,11 +114,8 @@ function App() {
         }
     };
 
-    const handleDemoLogin = (email: string) => {
-        // Persist login
-        localStorage.setItem('polimata_demo_user', email);
+    const handleAuthSuccess = (email: string) => {
         mapUserFromSession(email);
-        setDemoAuthenticated(true);
     };
 
     const handleLogout = async () => {
@@ -203,7 +203,7 @@ function App() {
     }, [accentColor]);
 
     if (loadingSession) return <div className="min-h-screen bg-black flex items-center justify-center text-white"><Cpu className="animate-pulse" /></div>;
-    if (!session && !demoAuthenticated) return <LoginView onLoginSuccess={handleDemoLogin} />;
+    if (!session) return <LoginView onLoginSuccess={handleAuthSuccess} />;
 
     return (
         <div className="flex flex-col h-[100dvh] relative overflow-hidden font-sans text-gray-200 selection:bg-theme-primary/30">

@@ -201,6 +201,7 @@ export const ragService = {
 
         try {
             // Try to fetch from Supabase cache first (faster)
+            // Note: This will fail gracefully if table doesn't exist
             const { data: cachedDocs, error } = await supabase
                 .from('notion_cache')
                 .select('*')
@@ -208,7 +209,15 @@ export const ragService = {
                 .order('last_synced', { ascending: false })
                 .limit(5);
 
-            if (!error && cachedDocs && cachedDocs.length > 0) {
+            if (error) {
+                // Table doesn't exist or other error - enter training mode
+                console.warn('[RAG] notion_cache table not found, entering training mode');
+                TRAINING_MODE_ACTIVE = true;
+                TRAINING_MODE_REASON = 'Base de datos en configuración. Ejecuta el schema SQL en Supabase.';
+                return [];
+            }
+
+            if (cachedDocs && cachedDocs.length > 0) {
                 TRAINING_MODE_ACTIVE = false;
                 return cachedDocs.map(doc => ({
                     id: doc.notion_id,
@@ -228,7 +237,7 @@ export const ragService = {
         } catch (err) {
             console.warn('[RAG] Notion/Cache unavailable:', err);
             TRAINING_MODE_ACTIVE = true;
-            TRAINING_MODE_REASON = 'Error de conexión con Notion';
+            TRAINING_MODE_REASON = 'Error de conexión con base de datos';
             return [];
         }
     },
