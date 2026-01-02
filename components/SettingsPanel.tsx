@@ -21,9 +21,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     const [activeTab, setActiveTab] = useState<Tab>('general');
 
     const teamMembers = [
-        { id: 'moises', name: 'Moisés', role: 'CPO & Co-Founder', email: 'moshequantum@gmail.com', status: 'Active', avatar: 'M' },
-        { id: 'andrea', name: 'Andrea', role: 'CEO & Co-Founder', email: 'andrea@elevat.com', status: 'Active', avatar: 'A' },
-        { id: 'christian', name: 'Christian', role: 'CTO & Co-Founder', email: 'christian@elevat.com', status: 'Pending', avatar: 'C' },
+        { id: 'andrea', name: 'Andrea', role: 'CEO & Strategy', email: 'andrea@elevat.com', status: 'Active', avatar: 'A' },
+        { id: 'moises', name: 'Moisés (Mou)', role: 'Head of Tech & AI', email: 'moshequantum@gmail.com', status: 'Active', avatar: 'M' },
+        { id: 'christian', name: 'Christian', role: 'Head of Digital & Ecom', email: 'christian@elevat.com', status: 'Active', avatar: 'C' },
+        { id: 'nae', name: 'Nae', role: 'Community Manager', email: 'nae@elevat.com', status: 'Pending', avatar: 'N' },
+        { id: 'zabdiel', name: 'Zabdiel', role: 'CRM Specialist (Ext)', email: 'zabdiel@partner.com', status: 'Active', avatar: 'Z' },
     ];
 
     return (
@@ -147,8 +149,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${member.status === 'Active'
-                                                        ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                                                        : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                                    ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                                                    : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                                                     }`}>
                                                     {member.status === 'Active' ? 'Activo' : 'Pendiente'}
                                                 </span>
