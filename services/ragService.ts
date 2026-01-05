@@ -174,37 +174,65 @@ export const ragService = {
 
     /**
      * Retrieves relevant context based on user role and query.
-     * Searches Supabase + Notion + Memory
+     * Uses semantic search (Vector) in Supabase and falls back to text search if needed.
      */
-    async retrieveContext(query: string, role: string): Promise<string> {
-        console.log(`[RAG] Searching knowledge base for role: ${role} query: ${query}`);
+    async retrieveContext(query: string, role: string, organizationId?: string): Promise<string> {
+        console.log(`[RAG] Vector searching for role: ${role} query: ${query} (Org: ${organizationId})`);
 
         let contextResults: string[] = [];
 
-        // 1. Search in Supabase knowledge_sources
+        // 1. Semantic Search (Supabase Vector)
         try {
-            const { data, error } = await supabase
-                .from('knowledge_sources')
-                .select('name, chunks, format')
-                .limit(10);
-
-            if (!error && data) {
-                const queryTerms = query.toLowerCase().split(' ').filter(w => w.length > 3);
-
-                data.forEach(source => {
-                    if (source.chunks) {
-                        source.chunks.forEach((chunk: string) => {
-                            const chunkLower = chunk.toLowerCase();
-                            const matchCount = queryTerms.reduce((acc, term) => acc + (chunkLower.includes(term) ? 1 : 0), 0);
-                            if (matchCount > 0) {
-                                contextResults.push(`SOURCE: ${source.name} (${source.format})\nCONTENT: ${chunk}`);
-                            }
-                        });
-                    }
+            if (organizationId) {
+                // Generate embedding for the query
+                const queryEmbedding = await import('./geminiService').then(m => m.geminiService.embedText(query));
+                
+                const { data: vectorResults, error: vectorError } = await supabase.rpc('match_documents', {
+                    query_embedding: queryEmbedding,
+                    match_threshold: 0.5, // Refinable
+                    match_count: 5,
+                    filter_organization_id: organizationId
                 });
+
+                if (!vectorError && vectorResults) {
+                    vectorResults.forEach((res: any) => {
+                        contextResults.push(`SOURCE: ${res.metadata?.source || 'Neural DB'} (Vector Match)\nCONTENT: ${res.content}`);
+                    });
+                } else if (vectorError) {
+                    console.warn('[RAG] Vector search RPC failed, falling back to keyword search:', vectorError);
+                }
             }
         } catch (err) {
-            console.warn('[RAG] Supabase search unavailable:', err);
+            console.warn('[RAG] Semantic search unavailable:', err);
+        }
+
+        // 2. Keyword Fallback (Legacy/Memory)
+        if (contextResults.length < 2) {
+            // Search in Supabase knowledge_sources (Keyword)
+            try {
+                const { data, error } = await supabase
+                    .from('knowledge_sources')
+                    .select('name, chunks, format')
+                    .limit(5);
+
+                if (!error && data) {
+                    const queryTerms = query.toLowerCase().split(' ').filter(w => w.length > 3);
+
+                    data.forEach(source => {
+                        if (source.chunks) {
+                            source.chunks.forEach((chunk: string) => {
+                                const chunkLower = chunk.toLowerCase();
+                                const matchCount = queryTerms.reduce((acc, term) => acc + (chunkLower.includes(term) ? 1 : 0), 0);
+                                if (matchCount > 0) {
+                                    contextResults.push(`SOURCE: ${source.name} (Keyword Match)\nCONTENT: ${chunk}`);
+                                }
+                            });
+                        }
+                    });
+                }
+            } catch (err) {
+                console.warn('[RAG] Supabase keyword search unavailable:', err);
+            }
         }
 
         // 2. Search in In-Memory Store (User Uploaded)

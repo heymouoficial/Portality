@@ -67,7 +67,7 @@ class GeminiService {
         if (apiKey) {
             this.genAI = new GoogleGenerativeAI(apiKey);
             this.model = this.genAI.getGenerativeModel({
-                model: 'gemini-2.0-flash-exp',
+                model: 'gemini-flash-latest',
                 systemInstruction: AUREON_SYSTEM_PROMPT,
             });
         }

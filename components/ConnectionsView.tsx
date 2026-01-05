@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
-import { 
-    Zap, Link2, ExternalLink, CheckCircle2, 
-    AlertCircle, Database, Globe, Layers,
-    Plus, Search, MoreHorizontal, Settings2, Clock
-} from 'lucide-react';
+import { Plus, Search, MoreHorizontal, AlertCircle, Database, Globe, Layers, Clock, Loader2, CheckCircle2, Zap } from 'lucide-react';
 import { getCurrentBrand } from '../config/branding';
+import { notionService } from '../services/notionService';
 
 interface Connection {
     id: string;
@@ -20,6 +17,22 @@ interface Connection {
 const ConnectionsView: React.FC<{ organizationId: string }> = ({ organizationId }) => {
     const brand = getCurrentBrand();
     const [searchQuery, setSearchQuery] = useState('');
+    const [connectingId, setConnectingId] = useState<string | null>(null);
+    const [connectedIds, setConnectedIds] = useState<string[]>([]);
+
+    const handleConnect = async (id: string, name: string) => {
+        if (id !== 'notion') return;
+        
+        setConnectingId(id);
+        try {
+            await notionService.provisionWorkspace(organizationId, organizationId);
+            setConnectedIds(prev => [...prev, id]);
+        } catch (error) {
+            console.error('Failed to connect:', error);
+        } finally {
+            setConnectingId(null);
+        }
+    };
 
     const connections: Connection[] = [
         { 
@@ -90,69 +103,83 @@ const ConnectionsView: React.FC<{ organizationId: string }> = ({ organizationId 
 
             {/* INTEGRATIONS GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredConnections.map((conn) => (
-                    <div 
-                        key={conn.id}
-                        className="group relative bg-[#0A0A0B] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-all overflow-hidden"
-                    >
-                        {/* Status Bar */}
-                        <div className={`absolute top-0 left-0 right-0 h-1 ${
-                            conn.status === 'connected' ? 'bg-emerald-500/50' : 
-                            conn.status === 'pending' ? 'bg-amber-500/50' : 'bg-transparent'
-                        }`} />
+                {filteredConnections.map((conn) => {
+                    const isConnecting = connectingId === conn.id;
+                    const isLocalConnected = connectedIds.includes(conn.id);
+                    const effectiveStatus = isLocalConnected ? 'connected' : (isConnecting ? 'pending' : conn.status);
 
-                        <div className="flex items-start justify-between mb-4">
-                            <div className={`p-3 rounded-xl bg-white/5 text-white group-hover:scale-110 transition-transform duration-500`}>
-                                {conn.icon}
+                    return (
+                        <div 
+                            key={conn.id}
+                            className="group relative bg-[#0A0A0B] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-all overflow-hidden"
+                        >
+                            {/* Status Bar */}
+                            <div className={`absolute top-0 left-0 right-0 h-1 ${
+                                effectiveStatus === 'connected' ? 'bg-emerald-500/50' : 
+                                effectiveStatus === 'pending' ? 'bg-amber-500/50' : 'bg-transparent'
+                            }`} />
+
+                            <div className="flex items-start justify-between mb-4">
+                                <div className={`p-3 rounded-xl bg-white/5 text-white group-hover:scale-110 transition-transform duration-500`}>
+                                    {conn.icon}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-lg ${
+                                        effectiveStatus === 'connected' ? 'bg-emerald-500/10 text-emerald-400' :
+                                        effectiveStatus === 'pending' ? 'bg-amber-500/10 text-amber-400' :
+                                        'bg-white/5 text-gray-500'
+                                    }`}>
+                                        {effectiveStatus === 'connected' ? 'Activo' : 
+                                         effectiveStatus === 'pending' ? 'Configurando' : 'Desconectado'}
+                                    </span>
+                                    <button className="p-1.5 rounded-lg text-gray-600 hover:text-white hover:bg-white/5 transition-all">
+                                        <MoreHorizontal size={16} />
+                                    </button>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-lg ${
-                                    conn.status === 'connected' ? 'bg-emerald-500/10 text-emerald-400' :
-                                    conn.status === 'pending' ? 'bg-amber-500/10 text-amber-400' :
-                                    'bg-white/5 text-gray-500'
-                                }`}>
-                                    {conn.status === 'connected' ? 'Activo' : 
-                                     conn.status === 'pending' ? 'Configurando' : 'Desconectado'}
-                                </span>
-                                <button className="p-1.5 rounded-lg text-gray-600 hover:text-white hover:bg-white/5 transition-all">
-                                    <MoreHorizontal size={16} />
+
+                            <h3 className="text-lg font-bold text-white mb-1">{conn.name}</h3>
+                            <p className="text-xs text-gray-500 mb-6 leading-relaxed">
+                                {conn.description}
+                            </p>
+
+                            <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                {effectiveStatus === 'connected' ? (
+                                    <div className="flex items-center gap-2 text-[10px] font-medium text-gray-500">
+                                        <Clock size={12} />
+                                        {conn.lastSynced || 'Sincronizado'}
+                                    </div>
+                                ) : (
+                                    <div className="text-[10px] font-medium text-gray-600 uppercase tracking-widest flex items-center gap-1">
+                                        <AlertCircle size={10} /> {effectiveStatus === 'pending' ? 'Procesando...' : 'Requiere acción'}
+                                    </div>
+                                )}
+
+                                <button 
+                                    onClick={() => handleConnect(conn.id, conn.name)}
+                                    disabled={isConnecting || effectiveStatus === 'connected'}
+                                    className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                        effectiveStatus === 'connected' 
+                                            ? 'bg-emerald-500/10 text-emerald-400 cursor-default' 
+                                            : 'bg-white text-black hover:bg-gray-200 disabled:opacity-50'
+                                    }`}
+                                >
+                                    {isConnecting ? (
+                                        <Loader2 size={14} className="animate-spin" />
+                                    ) : (
+                                        <>
+                                            {effectiveStatus === 'connected' ? 'Listura' : 'Conectar'}
+                                            {effectiveStatus === 'connected' ? <CheckCircle2 size={14} /> : <ArrowRight size={14} />}
+                                        </>
+                                    )}
                                 </button>
                             </div>
+
+                            {/* Liquid Visual Element */}
+                            <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-white/5 blur-3xl rounded-full group-hover:bg-white/10 transition-colors duration-700 pointer-events-none"></div>
                         </div>
-
-                        <h3 className="text-lg font-bold text-white mb-1">{conn.name}</h3>
-                        <p className="text-xs text-gray-500 mb-6 leading-relaxed">
-                            {conn.description}
-                        </p>
-
-                        <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                            {conn.status === 'connected' ? (
-                                <div className="flex items-center gap-2 text-[10px] font-medium text-gray-500">
-                                    <Clock size={12} />
-                                    {conn.lastSynced}
-                                </div>
-                            ) : (
-                                <div className="text-[10px] font-medium text-gray-600 uppercase tracking-widest flex items-center gap-1">
-                                    <AlertCircle size={10} /> Requiere acción
-                                </div>
-                            )}
-
-                            <button 
-                                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                    conn.status === 'connected' 
-                                        ? 'bg-white/5 text-white hover:bg-white/10' 
-                                        : 'bg-white text-black hover:bg-gray-200'
-                                }`}
-                            >
-                                {conn.status === 'connected' ? 'Gestionar' : 'Conectar'}
-                                <ArrowRight size={14} />
-                            </button>
-                        </div>
-
-                        {/* Liquid Visual Element */}
-                        <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-white/5 blur-3xl rounded-full group-hover:bg-white/10 transition-colors duration-700 pointer-events-none"></div>
-                    </div>
-                ))}
+                    );
+                })}
 
                 {/* ADD NEW CARD */}
                 <button className="flex flex-col items-center justify-center p-8 bg-white/[0.01] border border-dashed border-white/10 rounded-2xl hover:bg-white/5 hover:border-white/20 transition-all group">

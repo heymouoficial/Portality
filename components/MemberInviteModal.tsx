@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Mail, Shield, ArrowRight, Loader2, Check } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface InviteMemberModalProps {
     isOpen: boolean;
@@ -12,23 +13,53 @@ const MemberInviteModal: React.FC<InviteMemberModalProps> = ({ isOpen, onClose, 
     const [role, setRole] = useState<'admin' | 'member'>('member');
     const [isLoading, setIsLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     if (!isOpen) return null;
 
     const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
+        setError(null);
         
-        // Simular envío de invitación
-        setTimeout(() => {
-            setIsLoading(false);
+        try {
+            // 1. Encontrar ID del usuario por Email en la tabla de perfiles
+            const { data: userData, error: userError } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('email', email.toLowerCase().trim())
+                .single();
+
+            if (userError || !userData) {
+                throw new Error('El usuario no está registrado en Portality. Invítalo primero a la plataforma.');
+            }
+
+            // 2. Insertar en la relación de miembros
+            const { error: memberError } = await supabase
+                .from('organization_members')
+                .insert({
+                    organization_id: organizationId,
+                    user_id: userData.id,
+                    role: role
+                });
+
+            if (memberError) {
+                if (memberError.code === '23505') throw new Error('Este usuario ya es miembro de la organización.');
+                throw memberError;
+            }
+
             setIsSuccess(true);
             setTimeout(() => {
                 onClose();
                 setIsSuccess(false);
                 setEmail('');
-            }, 2000);
-        }, 1500);
+            }, 3000);
+        } catch (err: any) {
+            console.error('[Invite] Error:', err);
+            setError(err.message || 'Error al enviar invitación');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -97,6 +128,13 @@ const MemberInviteModal: React.FC<InviteMemberModalProps> = ({ isOpen, onClose, 
                                     </button>
                                 </div>
                             </div>
+
+                            {error && (
+                                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-[11px] text-red-400 animate-in shake duration-300">
+                                    <X size={14} className="shrink-0" />
+                                    {error}
+                                </div>
+                            )}
 
                             <div className="pt-4">
                                 <button 

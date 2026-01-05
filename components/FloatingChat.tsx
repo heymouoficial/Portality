@@ -69,9 +69,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         setIsLoading(true);
 
         try {
-            // 1. Retrieve RAG Context (Vectors)
             const { ragService } = await import('../services/ragService');
-            const ragContext = await ragService.retrieveContext(inputValue, organizationId);
+            const ragContext = await ragService.retrieveContext(inputValue, 'user', organizationId);
 
             const context: AureonContext = {
                 userName,
