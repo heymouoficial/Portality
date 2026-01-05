@@ -25,8 +25,11 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
             setMetrics(data);
         };
 
+        const isDev = import.meta.env.DEV;
         fetchMetrics();
-        const metricsInterval = setInterval(fetchMetrics, 5000);
+        
+        // Only poll metrics in production or with long interval in dev to avoid CORS noise
+        const metricsInterval = setInterval(fetchMetrics, isDev ? 60000 : 5000);
 
         return () => {
             clearInterval(timer);

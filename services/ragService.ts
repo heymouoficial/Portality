@@ -21,16 +21,27 @@ export const ragService = {
      * Ingests a raw content string (Clipboard or Text File)
      * Stores in Supabase if available, otherwise in-memory
      */
-    async ingestDocument(title: string, content: string, type: KnowledgeSource['type'], format: KnowledgeSource['format'] = 'text', onStatus?: (status: string) => void): Promise<KnowledgeSource> {
-        console.log(`[RAG] Ingesting document: ${title} (${type})`);
+    async ingestDocument(
+        title: string, 
+        content: string, 
+        type: KnowledgeSource['type'], 
+        organizationId: string | undefined,
+        format: KnowledgeSource['format'] = 'text', 
+        onStatus?: (status: string) => void
+    ): Promise<KnowledgeSource> {
+        console.log(`[RAG] Ingesting document: ${title} (${type}) for Org: ${organizationId}`);
+
+        if (!organizationId) {
+            onStatus?.('⚠️ Error: No Organization Selected.');
+            throw new Error('Organization ID is required for vectorization.');
+        }
 
         onStatus?.(`Analyzing content: ${title}...`);
-        await new Promise(r => setTimeout(r, 600)); // Visual delay
+        await new Promise(r => setTimeout(r, 600));
 
         onStatus?.('Parsing structure & generating chunks...');
         const chunks = content.split(/\n\n+/).filter(c => c.length > 20);
-        await new Promise(r => setTimeout(r, 500));
-
+        
         const newSource: KnowledgeSource = {
             id: Date.now().toString(),
             name: title,
@@ -43,26 +54,56 @@ export const ragService = {
             metadata: { chunkCount: chunks.length }
         };
 
-        // Try to persist to Supabase
         try {
             onStatus?.(`Connecting to Neural Database (Supabase)...`);
-            const { error } = await supabase.from('knowledge_sources').insert({
+            
+            // 1. Insert Parent Source
+            const { error: sourceError } = await supabase.from('knowledge_sources').insert({
                 id: newSource.id,
                 name: newSource.name,
                 type: newSource.type,
                 format: newSource.format,
                 content: newSource.content,
-                chunks: newSource.chunks,
                 metadata: newSource.metadata,
+                organization_id: organizationId,
                 created_at: new Date().toISOString()
             });
 
-            if (error) throw error;
+            if (sourceError) throw sourceError;
+
+            // 2. Generate Embeddings & Insert Chunks
+            onStatus?.(`Generating ${chunks.length} vector embeddings (Gemini)...`);
+            
+            // Limit concurrency to avoid rate limits
+            for (let i = 0; i < chunks.length; i++) {
+                const chunk = chunks[i];
+                onStatus?.(`Vectorizing chunk ${i + 1}/${chunks.length}...`);
+                
+                try {
+                    const embedding = await import('./geminiService').then(m => m.geminiService.embedText(chunk));
+                    
+                    const { error: chunkError } = await supabase.from('document_chunks').insert({
+                        source_id: newSource.id,
+                        organization_id: organizationId,
+                        content: chunk,
+                        embedding: embedding,
+                        metadata: { source: title, index: i }
+                    });
+
+                    if (chunkError) {
+                        console.error('Chunk insert error:', chunkError);
+                    }
+                } catch (embError) {
+                    console.error('Embedding generation failed:', embError);
+                }
+            }
+
             onStatus?.('✅ Successfully vectorized and persisted.');
-            console.log(`[RAG] Document persisted to Supabase: ${title}`);
+            console.log(`[RAG] Document vectorized: ${title}`);
+
         } catch (err) {
-            onStatus?.('⚠️ Supabase sync failed. Using local memory backup.');
-            console.warn(`[RAG] Supabase unavailable, using in-memory storage:`, err);
+            onStatus?.('⚠️ Vectorization failed. Using local memory backup.');
+            console.warn(`[RAG] Supabase/Vector error:`, err);
             MEMORY_VECTOR_STORE.push(newSource);
         }
 
@@ -72,7 +113,7 @@ export const ragService = {
     /**
      * Simulates processing a File object (drag & drop)
      */
-    async ingestFile(file: File, onStatus?: (status: string) => void): Promise<KnowledgeSource> {
+    async ingestFile(file: File, organizationId: string | undefined, onStatus?: (status: string) => void): Promise<KnowledgeSource> {
         return new Promise((resolve) => {
             onStatus?.(`Reading file stream: ${file.name}...`);
             const isTextBased = file.type.includes('text') || file.name.endsWith('.md') || file.name.endsWith('.json');
@@ -81,7 +122,7 @@ export const ragService = {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const content = e.target?.result as string;
-                    this.ingestDocument(file.name, content, 'file', 'txt', onStatus).then(resolve);
+                    this.ingestDocument(file.name, content, 'file', organizationId, 'txt', onStatus).then(resolve);
                 };
                 reader.readAsText(file);
             } else {
@@ -92,7 +133,7 @@ export const ragService = {
                 if (file.name.endsWith('.pdf')) fmt = 'pdf';
                 if (file.name.includes('doc')) fmt = 'docx';
 
-                this.ingestDocument(file.name, trainingContent, 'file', fmt, onStatus).then(resolve);
+                this.ingestDocument(file.name, trainingContent, 'file', organizationId, fmt, onStatus).then(resolve);
             }
         });
     },

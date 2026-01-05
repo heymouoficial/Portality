@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { ragService } from './services/ragService';
+import ConnectionsView from './components/ConnectionsView';
+import TeamView from './components/TeamView';
 import LoginView from './components/LoginView';
 import { SettingsPanel } from './components/SettingsPanel';
 import Header from './components/Header';
@@ -402,6 +404,7 @@ export default function App() {
                 onNavigate={setCurrentView} 
                 user={currentUser} 
                 onLogout={handleLogout} 
+                onOpenSettings={() => setIsSettingsOpen(true)}
                 organizations={organizations}
                 currentOrgId={currentOrgId}
                 onSwitchOrg={setCurrentOrgId}
@@ -431,15 +434,33 @@ export default function App() {
                         />
                     )}
 
-                    {currentView === 'flow' && <RAGView />}
+                    {currentView === 'flow' && <RAGView organizationId={currentOrgId} />}
+
+                    {currentView === 'connections' && (
+                        <ConnectionsView 
+                            organizationId={currentOrgId}
+                        />
+                    )}
+
+                    {currentView === 'team' && (
+                        <TeamView 
+                            organizationId={currentOrgId}
+                        />
+                    )}
                 </div>
             </main>
 
             {/* FLOATING CHAT - AUREON UI2GEN */}
             <FloatingChat 
                 tasks={tasks.filter(t => t.organizationId === currentOrgId)}
-                userName={currentUser.full_name}
+                userName={currentUser.name}
                 pendingTaskCount={tasks.filter(t => t.organizationId === currentOrgId && !t.completed).length}
+                organizationId={currentOrgId}
+                organizationName={organizations.find(o => o.id === currentOrgId)?.name}
+                integrations={{
+                    notion: currentOrgId === 'multiversa' ? 'disconnected' : 'connected',
+                    hostinger: currentOrgId === 'multiversa' ? 'connected' : 'disconnected'
+                }}
                 onNavigate={setCurrentView}
                 onAddTask={(task) => {
                     const newTask = {

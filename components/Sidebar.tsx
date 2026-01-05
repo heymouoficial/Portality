@@ -38,6 +38,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         { id: 'home' as ViewState, label: 'Inicio', icon: <Home size={20} /> },
         { id: 'agency' as ViewState, label: 'Datos', icon: <Folder size={20} /> },
         { id: 'flow' as ViewState, label: 'RAG', icon: <BookOpen size={20} /> },
+        { id: 'connections' as any, label: 'Conexiones', icon: <Zap size={20} /> },
+        { id: 'team' as any, label: 'Equipo', icon: <User size={20} /> },
     ];
 
     return (
