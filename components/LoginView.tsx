@@ -97,7 +97,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
       }
     } catch (err: any) {
         // Fallback for demo users without Supabase Auth
-        if (email.includes('elevat.io') || email.includes('multiversa.io')) {
+        if (email.includes('elevatmarketing.com') || email.includes('multiversa.io')) {
              onLoginSuccess(email);
              return;
         }
@@ -116,7 +116,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     // Invite-Only Check Logic (Mocked for now, implies DB check in future)
     const normalizedEmail = email.toLowerCase();
     const isAllowed = 
-        normalizedEmail.includes('@elevat.io') || 
+        normalizedEmail.includes('@elevatmarketing.com') || 
         normalizedEmail.includes('multiversa') || 
         normalizedEmail.includes('runa') ||
         normalizedEmail === 'moshequantum@gmail.com' ||
@@ -135,7 +135,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${import.meta.env.VITE_SITE_URL || window.location.origin}/`,
         }
       });
 
@@ -161,7 +161,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     setLoading(true);
     setError(null);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${import.meta.env.VITE_SITE_URL || window.location.origin}/reset-password` });
       if (error) throw error;
       setMode('reset-sent');
     } catch (err: any) {

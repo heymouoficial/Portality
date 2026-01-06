@@ -14,18 +14,50 @@ interface HeroChatProps {
 
 const HeroChat: React.FC<HeroChatProps> = ({ messages, input, setInput, isThinking, onSend, isFloating = false }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    // If floating, start minimized by default, otherwise expanded
+    const [isExpanded, setIsExpanded] = React.useState(!isFloating);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
     useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
+        // Auto-expand if new assistant message arrives and it's floating
+        const lastMsg = messages[messages.length - 1];
+        if (isFloating && lastMsg?.role === 'assistant' && !isExpanded) {
+           // Optional: uncomment to auto-open on response
+           // setIsExpanded(true); 
+        }
+        if (isExpanded) scrollToBottom();
+    }, [messages, isExpanded]);
 
+    // MINIMIZED STATE (Floating Avatar)
+    if (!isExpanded) {
+        return (
+            <button 
+                onClick={() => setIsExpanded(true)}
+                className="group relative flex items-center gap-3 p-2 pr-6 rounded-full bg-black/60 backdrop-blur-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:bg-black/80 hover:scale-105 transition-all cursor-pointer ml-auto"
+            >
+                 <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center ring-2 ring-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.3)] overflow-hidden relative">
+                    <img src="/aureon.webp" alt="Aureon" className="w-full h-full object-cover" />
+                    {isThinking && (
+                        <div className="absolute inset-0 bg-emerald-500/20 animate-pulse"></div>
+                    )}
+                </div>
+                <div className="flex flex-col items-start">
+                    <span className="text-xs font-black text-white uppercase tracking-widest">Aureon</span>
+                    <span className="text-[9px] font-bold text-emerald-400 animate-pulse">Online</span>
+                </div>
+                
+                {/* Notification Badge if unread? Simplified for now */}
+            </button>
+        );
+    }
+
+    // EXPANDED STATE
     return (
         <div className={`p-6 md:p-8 rounded-[48px] bg-black/60 backdrop-blur-3xl border border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.8)] flex flex-col w-full mx-auto group ring-1 ring-white/5 hover:ring-white/10 transition-all ${
-            isFloating ? 'h-[400px] rounded-[32px] shadow-[0_0_50px_rgba(0,0,0,0.9)]' : 'h-[500px] max-w-md'
+            isFloating ? 'h-[400px] rounded-[32px] shadow-[0_0_50px_rgba(0,0,0,0.9)] animate-in slide-in-from-bottom-10 fade-in duration-300' : 'h-[500px] max-w-md'
         }`}>
             {/* Header */}
             <div className={`flex items-center justify-between border-b border-white/5 ${isFloating ? 'mb-3 pb-3' : 'mb-6 pb-4'}`}>
@@ -38,8 +70,18 @@ const HeroChat: React.FC<HeroChatProps> = ({ messages, input, setInput, isThinki
                         <div className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Public Access v2.0</div>
                     </div>
                 </div>
-                <div className="px-2 py-1 rounded bg-white/5 border border-white/10">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></div>
+                
+                <div className="flex items-center gap-2">
+                     <div className="px-2 py-1 rounded bg-white/5 border border-white/10">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></div>
+                    </div>
+                    {/* Close/Minimize Button */}
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); setIsExpanded(false); }}
+                        className="p-2 rounded-full hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
+                    >
+                        <div className="w-4 h-0.5 bg-current rounded-full"></div>
+                    </button>
                 </div>
             </div>
 

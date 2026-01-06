@@ -41,9 +41,9 @@ const EMAIL_TO_PROFILE: Record<string, string> = {
     'andreachimarasonlinebusiness@gmail.com': 'andrea',
     'christomoreno6@gmail.com': 'christian',
     'moshequantum@gmail.com': 'moises',
-    'andrea@elevat.io': 'andrea',
-    'christian@elevat.io': 'christian',
-    'moises@elevat.io': 'moises'
+    'andrea@elevatmarketing.com': 'andrea',
+    'christian@elevatmarketing.com': 'christian',
+    'moises@elevatmarketing.com': 'moises'
 };
 
 const SESSION_TIMEOUT_MS = 90 * 60 * 1000; // 90 Minutes
@@ -66,6 +66,7 @@ export default function App() {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [themeMode, setThemeMode] = useState<string>('dark');
     const [audioState, setAudioState] = useState<AudioState>(AudioState.IDLE);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const [tasks, setTasks] = useState<Task[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
@@ -277,7 +278,8 @@ export default function App() {
         };
         loadDocs();
 
-        setAccentColor(currentUser.theme);
+        // setAccentColor(currentUser.theme); // Removed per user request
+
         setMessages([
             { id: Date.now().toString(), role: 'assistant', content: brand.defaultAssistantMessage, timestamp: new Date() }
         ]);
@@ -348,7 +350,7 @@ export default function App() {
         setMessages(prev => [...prev, { id: Date.now().toString(), role: 'system', content: `✓ Tarea creada: ${title}`, timestamp: new Date() }]);
     };
 
-    const [accentColor, setAccentColor] = useState<string>('emerald');
+
 
     useEffect(() => {
         const html = document.documentElement;
@@ -360,19 +362,12 @@ export default function App() {
         }
     }, [themeMode]);
 
-    useEffect(() => {
-        const c = THEMES[accentColor];
-        if (c) {
-            const root = document.documentElement.style;
-            root.setProperty('--primary', c.primary);
-            root.setProperty('--primary-dim', c.primary + '33'); // Increased opacity for liquid feel
-            root.setProperty('--secondary', c.secondary);
-            root.setProperty('--secondary-dim', c.secondary + '33');
-        }
-    }, [accentColor]);
+
 
     if (loadingSession) return <div className="min-h-screen bg-[#020203] flex items-center justify-center"><div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div></div>;
     if (!session) return <LoginView onLoginSuccess={handleAuthSuccess} />;
+
+
 
     return (
         <div className="min-h-screen bg-[#020203] text-white selection:bg-indigo-500/30 selection:text-indigo-200 overflow-x-hidden font-sans">
@@ -399,21 +394,39 @@ export default function App() {
                 <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")' }}></div>
             </div>
 
+            {/* MOBILE OVERLAY */}
+            {isMobileMenuOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden animate-in fade-in"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                />
+            )}
+
             <Sidebar 
                 activeView={currentView} 
-                onNavigate={setCurrentView} 
+                onNavigate={(view) => {
+                    setCurrentView(view);
+                    setIsMobileMenuOpen(false);
+                }}
                 user={currentUser} 
                 onLogout={handleLogout} 
                 onOpenSettings={() => setIsSettingsOpen(true)}
                 organizations={organizations}
                 currentOrgId={currentOrgId}
                 onSwitchOrg={setCurrentOrgId}
+                mobileOpen={isMobileMenuOpen}
+                onMobileClose={() => setIsMobileMenuOpen(false)}
             />
 
             <main className={`flex-1 relative min-h-screen flex flex-col transition-all duration-300 ${
                 'md:ml-[72px]' // Match collapsed sidebar width
             }`}>
-                <Header user={currentUser} />
+                <Header 
+                    user={currentUser} 
+                    onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    isMobileMenuOpen={isMobileMenuOpen}
+                    activeView={currentView}
+                />
 
                 <div className="flex-1 mt-14 pb-24">
                     {currentView === 'home' && (
@@ -486,8 +499,9 @@ export default function App() {
             <SettingsPanel
                 isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)}
                 currentTheme={themeMode} onThemeChange={setThemeMode}
-                currentColor={accentColor} onColorChange={setAccentColor}
-                currentProfileId={currentUser.id} onProfileChange={(id) => { if (PROFILES[id]) setCurrentUser(PROFILES[id]); }}
+                currentProfileId={currentUser.id} 
+                onProfileChange={(id) => { if (PROFILES[id]) setCurrentUser(PROFILES[id]); }}
+                currentOrgId={currentOrgId}
             />
         </div>
     );

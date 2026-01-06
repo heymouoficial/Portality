@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     Users, UserPlus, Mail, Shield, 
     MoreHorizontal, Check, Clock, X,
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { getCurrentBrand } from '../config/branding';
 import MemberInviteModal from './MemberInviteModal';
+import { supabase } from '../lib/supabase';
 
 interface Member {
     id: string;
@@ -16,33 +17,70 @@ interface Member {
     avatar?: string;
 }
 
+const MemberSkeleton = () => (
+    <div className="flex items-center gap-4 p-4 bg-white/[0.02] border border-white/5 rounded-2xl animate-pulse">
+        <div className="w-12 h-12 rounded-xl bg-white/5"></div>
+        <div className="flex-1">
+            <div className="w-32 h-4 bg-white/5 rounded mb-2"></div>
+            <div className="w-48 h-3 bg-white/5 rounded"></div>
+        </div>
+        <div className="w-20 h-6 bg-white/5 rounded"></div>
+    </div>
+);
+
 const TeamView: React.FC<{ organizationId: string }> = ({ organizationId }) => {
     const brand = getCurrentBrand();
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+    const [members, setMembers] = useState<Member[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    // Mock members based on user description
-    const members: Member[] = [
-        { 
-            id: '1', name: 'Ástur', email: 'astur@multiversa.io', 
-            role: 'Owner' as const, status: 'active' as const, avatar: 'AS' 
-        },
-        { 
-            id: '2', name: 'Runa', email: 'runa@multiversa.io', 
-            role: 'Owner' as const, status: 'active' as const, avatar: 'RS' 
-        },
-        { 
-            id: '3', name: 'Andrea Chimaras', email: 'andrea@elevat.io', 
-            role: 'Admin' as const, status: 'active' as const, avatar: 'AC' 
-        }
-    ].filter(m => {
-        if (organizationId === 'multiversa') return m.name === 'Ástur' || m.name === 'Runa';
-        if (organizationId === 'elevat') return m.name === 'Andrea Chimaras';
-        return true;
-    });
+    useEffect(() => {
+        const fetchMembers = async () => {
+            setLoading(true);
+            try {
+                // Fetch members for this org
+                // Note: organization_members usually links user_id to profiles(id)
+                // We assume organization_members has: organization_id, user_id, role
+                const { data, error } = await supabase
+                    .from('organization_members')
+                    .select(`
+                        role,
+                        profiles:user_id (
+                            id,
+                            full_name,
+                            email,
+                            role
+                        )
+                    `)
+                    .eq('organization_id', organizationId);
 
-    const invitations = [
-        { id: 'inv1', email: 'future_partner@multiversa.io', role: 'Member', sentAt: 'Hace 1 hora' }
-    ].filter(() => organizationId === 'multiversa');
+                if (error) {
+                    // Fallback or just empty if error (table might be empty or permissions issue)
+                    console.error('Error loading team:', error);
+                    setMembers([]);
+                } else if (data) {
+                    const mappedMembers = data.map((item: any) => ({
+                        id: item.profiles?.id || 'unknown',
+                        name: item.profiles?.full_name || 'Usuario',
+                        email: item.profiles?.email || '',
+                        role: (item.roles || 'Member') as 'Owner' | 'Admin' | 'Member', // Use org role preferably
+                        status: 'active',
+                        avatar: item.profiles?.full_name?.charAt(0) || 'U'
+                    }));
+                    setMembers(mappedMembers);
+                }
+            } catch (err) {
+                console.error('Failed to fetch members:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchMembers();
+    }, [organizationId]);
+
+    // TODO: Implement Real Invitations Table
+    const invitations: any[] = []; 
 
     return (
         <div className="p-6 md:p-8 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -51,7 +89,12 @@ const TeamView: React.FC<{ organizationId: string }> = ({ organizationId }) => {
                 <div>
                     <h1 className="text-3xl font-black text-white tracking-tighter mb-2">Equipo</h1>
                     <p className="text-gray-500 text-sm">
-                        Gestiona los accesos autorizados para <span className="text-white font-bold">{organizationId.toUpperCase()}</span>.
+                        Gestiona los accesos autorizados para <span className="text-white font-bold">{
+                            // Try to find org name from members or passed prop? 
+                            // Prop is ID, usually we want name. 
+                            // Simplest: just ID for now or fetch Org Name (already done in parent usually)
+                            organizationId.toUpperCase()
+                        }</span>.
                     </p>
                 </div>
 
@@ -69,33 +112,46 @@ const TeamView: React.FC<{ organizationId: string }> = ({ organizationId }) => {
                 <section>
                     <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 ml-1">Miembros Activos</h2>
                     <div className="grid gap-3">
-                        {members.map((member) => (
-                            <div 
-                                key={member.id}
-                                className="group flex items-center gap-4 p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/[0.04] transition-all"
-                            >
-                                <div className="w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-300 font-black text-lg">
-                                    {member.avatar || member.name.charAt(0)}
-                                </div>
-                                
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="text-sm font-bold text-white truncate">{member.name}</h3>
-                                    <p className="text-xs text-gray-500 truncate">{member.email}</p>
-                                </div>
-
-                                <div className="flex items-center gap-4">
-                                    <div className="flex flex-col items-end gap-1">
-                                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-white/5 border border-white/5">
-                                            <Shield size={10} className="text-gray-400" />
-                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{member.role}</span>
-                                        </div>
+                        {loading ? (
+                            <>
+                                <MemberSkeleton />
+                                <MemberSkeleton />
+                                <MemberSkeleton />
+                            </>
+                        ) : members.length > 0 ? (
+                            members.map((member) => (
+                                <div 
+                                    key={member.id}
+                                    className="group flex items-center gap-4 p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/[0.04] transition-all"
+                                >
+                                    <div className="w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-300 font-black text-lg">
+                                        {member.avatar || member.name.charAt(0)}
                                     </div>
-                                    <button className="p-2 rounded-lg text-gray-600 hover:text-white hover:bg-white/5 transition-all">
-                                        <MoreHorizontal size={18} />
-                                    </button>
+                                    
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-sm font-bold text-white truncate">{member.name}</h3>
+                                        <p className="text-xs text-gray-500 truncate">{member.email}</p>
+                                    </div>
+
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex flex-col items-end gap-1">
+                                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-white/5 border border-white/5">
+                                                <Shield size={10} className="text-gray-400" />
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{member.role}</span>
+                                            </div>
+                                        </div>
+                                        <button className="p-2 rounded-lg text-gray-600 hover:text-white hover:bg-white/5 transition-all">
+                                            <MoreHorizontal size={18} />
+                                        </button>
+                                    </div>
                                 </div>
+                            ))
+                        ) : (
+                            <div className="p-8 text-center border border-dashed border-white/10 rounded-2xl bg-white/[0.01]">
+                                <Users className="mx-auto h-8 w-8 text-white/20 mb-3" />
+                                <p className="text-sm text-gray-500">No hay miembros en esta organización.</p>
                             </div>
-                        ))}
+                        )}
                     </div>
                 </section>
 
