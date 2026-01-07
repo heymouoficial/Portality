@@ -29,6 +29,7 @@ const RAGView: React.FC<RAGViewProps> = ({ organizationId }) => {
     const [selectedDoc, setSelectedDoc] = useState<KnowledgeDoc | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const [uploadStatus, setUploadStatus] = useState<string>('');
 
@@ -39,10 +40,11 @@ const RAGView: React.FC<RAGViewProps> = ({ organizationId }) => {
 
     const fetchDocuments = async () => {
         setIsLoading(true);
+        setError(null);
         try {
             // Fetch from DOCUMENTS table (Real Schema)
             const { data, error } = await supabase
-                .from('documents')
+                .from('knowledge_sources')
                 .select('*')
                 // .eq('organization_id', organizationId) // Uncomment if documents has org_id in schema, otherwise it might be global or RLS handled
                 .order('created_at', { ascending: false });
@@ -61,8 +63,9 @@ const RAGView: React.FC<RAGViewProps> = ({ organizationId }) => {
             }));
 
             setDocuments(mapped);
-        } catch (err) {
+        } catch (err: any) {
             console.error('[RAG] Error fetching docs:', err);
+            setError(err.message || 'Error loading documents');
         } finally {
             setIsLoading(false);
         }
@@ -201,6 +204,13 @@ const RAGView: React.FC<RAGViewProps> = ({ organizationId }) => {
                         <div className="p-8 text-center">
                             <RefreshCw size={24} className="mx-auto mb-3 text-gray-600 animate-spin" />
                             <p className="text-sm text-gray-500">Cargando documentos...</p>
+                        </div>
+                    ) : error ? (
+                         <div className="p-12 text-center text-red-400">
+                            <Database size={40} className="mx-auto mb-4 opacity-50" />
+                            <p className="text-sm font-medium mb-2">Error de Conexión</p>
+                            <p className="text-xs opacity-70">{error}</p>
+                            <button onClick={fetchDocuments} className="mt-4 px-3 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-xs">Reintentar</button>
                         </div>
                     ) : filteredDocs.length > 0 ? (
                         filteredDocs.map((doc) => (

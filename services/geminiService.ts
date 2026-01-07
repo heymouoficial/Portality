@@ -13,7 +13,7 @@ export interface AureonMessage {
 }
 
 export interface UIAction {
-    type: 'task_list' | 'confirm_task' | 'quick_stats' | 'calendar_event' | 'loading' | 'connect_notion';
+    type: 'task_list' | 'confirm_task' | 'quick_stats' | 'calendar_event' | 'loading' | 'connect_notion' | 'client_summary';
     data?: any;
 }
 
@@ -50,6 +50,7 @@ Usa bloques de acción solo si es necesario:
 - Lista tareas: \`\`\`action:task_list\n{"filter": "pending"}\n\`\`\`
 - Nueva tarea: \`\`\`action:confirm_task\n{"title": "...", "priority": "high"}\n\`\`\`
 - Conectar Notion: \`\`\`action:connect_notion\n{}\n\`\`\`
+- Resumen Clientes: \`\`\`action:client_summary\n{"clientId": "client-id-here"}\n\`\`\` (Usa cuando pregunten por estado de proyectos o clientes específicos)
 
 Aclara siempre que accedes a la base de conocimientos de [Organización Activa].`;
 

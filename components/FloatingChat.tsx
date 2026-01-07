@@ -4,8 +4,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { geminiService, AureonMessage, UIAction, AureonContext } from '../services/geminiService';
 import { getCurrentBrand } from '../config/branding';
-
-import { Task, ViewState } from '../types';
+import ClientSummaryCard from './ClientSummaryCard';
+import { notionService } from '../services/notionService';
+import { Client, Task, ViewState } from '../types';
 
 interface FloatingChatProps {
     tasks?: Task[];
@@ -20,6 +21,42 @@ interface FloatingChatProps {
         hostinger?: 'connected' | 'disconnected';
     };
 }
+
+const ClientSummaryLoader: React.FC<{ clientId: string; activeTasks: Task[] }> = ({ clientId, activeTasks }) => {
+    const [client, setClient] = useState<Client | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetch = async () => {
+            // For demo/alpha, we fetch all and find. In prod, fetch specific.
+            try {
+                const clients = await notionService.getClients();
+                // Improved fuzzy matching for demo
+                const found = clients.find(c => 
+                    c.id === clientId || 
+                    c.name.toLowerCase().includes(clientId.toLowerCase()) || 
+                    (c.notion_id && c.notion_id === clientId)
+                );
+                setClient(found || null);
+            } catch (e) {
+                console.error("Error fetching client for summary:", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetch();
+    }, [clientId]);
+
+    if (loading) return <div className="p-4 flex justify-center"><Loader2 className="animate-spin text-emerald-400" size={24} /></div>;
+    if (!client) return <div className="p-4 text-xs text-rose-400 bg-rose-500/10 rounded-lg border border-rose-500/20">Cliente no encontrado en Notion.</div>;
+
+    // Filter tasks for this client
+    // We assume tasks passed to FloatingChat are all active tasks. 
+    // We need to match task.clientId to client.id or client.notion_id
+    const clientTasks = activeTasks.filter(t => t.clientId === client.id || t.clientId === client.notion_id);
+
+    return <div className="mt-4"><ClientSummaryCard client={client} activeTasks={clientTasks} /></div>;
+};
 
 const FloatingChat: React.FC<FloatingChatProps> = ({ 
     tasks = [],
@@ -206,6 +243,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                         </button>
                     </div>
                 );
+
+            case 'client_summary':
+                return <ClientSummaryLoader clientId={action.data?.clientId || ''} activeTasks={tasks} />;
 
             default:
                 return null;
