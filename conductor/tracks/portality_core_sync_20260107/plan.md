@@ -2,7 +2,7 @@
 
 ## Phase 1: Core Notion Integration & Schema Alignment
 - [x] Task: Initialize Notion SDK and configure environment secrets (`NOTION_API_KEY`, `NOTION_DATABASE_IDS`). (fdae477)
-- [ ] Task: Implement `notionService.ts` for reading the 5 core databases (Clients, Services, Tasks, Team, Calendar).
+- [x] Task: Implement `notionService.ts` for reading the 5 core databases (Clients, Services, Tasks, Team, Calendar). (c4f768f)
 - [ ] Task: Create data mappers to align Notion database schemas with Portality's internal state.
 - [ ] Task: Write tests for Notion data fetching and mapping logic.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Core Notion Integration' (Protocol in workflow.md)
