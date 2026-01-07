@@ -33,7 +33,14 @@
 - [x] Task: Debug `FloatingChat.tsx` to ensure `ClientSummaryCard` injects correctly (Generative UI pattern). (b623c4e)
 - [x] Task: Implement User-Session Mapping: Link Supabase Auth email -> `profiles` table -> Notion 'Team' DB entry. (App.tsx updated)
 - [x] Task: Overhaul Manual Auth to ensure login redirects to LiquidGlass Dashboard with correct user context. (Verified logic in LoginView/App)
-- [x] Task: Conductor - User Manual Verification 'Phase 5: Alpha v1.0 Hotfix' (Protocol in workflow.md) (456cc6b)
+- [ ] Task: Conductor - User Manual Verification 'Phase 5: Alpha v1.0 Hotfix' (Protocol in workflow.md)
+
+## Phase 5.5: Alpha v1.0 Critical Debugging (Hotfix 2)
+- [ ] Task: Implement Notion -> Supabase Polling Sync to reflect Notion changes in Portality UI.
+- [ ] Task: Debug `FloatingChat` Generative UI: Verify regex against real Gemini output and force component rendering.
+- [ ] Task: Simplify `RAGView` loading logic (remove dynamic import) to ensure it loads immediately.
+- [ ] Task: Verify User Session Filtering: Add debug logs to `App.tsx` profile mapping and `HomeView` filtering.
+- [ ] Task: Conductor - User Manual Verification 'Phase 5.5: Hotfix 2' (Protocol in workflow.md)
 
 ## Phase 6: UI Hydration & Final Polish [checkpoint: 559ea40]
 - [x] Task: Implement session-aware hydration logic for `Dashboard.tsx`. (7ce8992)
