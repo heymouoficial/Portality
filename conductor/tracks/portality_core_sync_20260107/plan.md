@@ -16,7 +16,7 @@
 
 ## Phase 3: Bidirectional Sync Logic
 - [x] Task: Implement `write` operations in `notionService.ts` for Tasks and Clients. (d5bfe21)
-- [ ] Task: Setup Supabase Edge Functions or internal sync logic to detect changes in Portality and push to Notion.
+- [x] Task: Setup Supabase Edge Functions or internal sync logic to detect changes in Portality and push to Notion. (cfaf19a)
 - [ ] Task: Write tests for bidirectional data flow (Mocking Notion API).
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Bidirectional Sync' (Protocol in workflow.md)
 
