@@ -21,8 +21,8 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Bidirectional Sync' (Protocol in workflow.md) (e5bc2ba)
 
 ## Phase 4: RAG Performance & Aureon Optimization
-- [ ] Task: Profile current Aureon chat performance and identify RAG connection bottlenecks.
-- [ ] Task: Refactor `ragService.ts` to optimize Supabase/Flowise handshake and implement caching where appropriate.
+- [x] Task: Profile current Aureon chat performance and identify RAG connection bottlenecks. (Manual Analysis)
+- [x] Task: Refactor `ragService.ts` to optimize Supabase/Flowise handshake and implement caching where appropriate. (3a38eda)
 - [ ] Task: Implement initial "Agent-Controlled Rendering" logic for Task Cards and Table components.
 - [ ] Task: Write tests for component rendering triggers and RAG response times.
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: RAG & Aureon Optimization' (Protocol in workflow.md)
