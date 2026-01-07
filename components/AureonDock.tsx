@@ -42,14 +42,21 @@ const AureonDock: React.FC<AureonDockProps> = ({ activeView, onNavigate, onVoice
                     {/* CENTRAL AUREON BUTTON */}
                     <button 
                         onClick={onVoiceClick}
-                        className="relative -top-6 group flex flex-col items-center gap-1"
+                        className="group flex flex-col items-center justify-center gap-1 p-2 rounded-2xl relative"
                     >
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-emerald-500/20 blur-2xl rounded-full scale-150 animate-pulse"></div>
-                            <div className="relative w-14 h-14 bg-gradient-to-tr from-emerald-600 to-teal-400 rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(16,185,129,0.4)] border-4 border-black group-active:scale-90 transition-transform">
-                                <Mic size={24} className="text-white fill-white/20" />
+                        {/* Placeholder for alignment with other icons */}
+                        <div className="w-[22px] h-[22px]" />
+                        
+                        {/* Orb positioned absolutely to float */}
+                        <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-emerald-500/20 blur-2xl rounded-full scale-150 animate-pulse"></div>
+                                <div className="relative w-14 h-14 bg-gradient-to-tr from-emerald-600 to-teal-400 rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(16,185,129,0.4)] border-4 border-black group-active:scale-90 transition-transform">
+                                    <Mic size={24} className="text-white fill-white/20" />
+                                </div>
                             </div>
                         </div>
+
                         <span className="text-[10px] font-bold text-emerald-400 tracking-wide uppercase drop-shadow-md">Savara</span>
                     </button>
 
