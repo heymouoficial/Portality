@@ -15,7 +15,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Aureon UI Integration' (Protocol in workflow.md) (ba19a3f)
 
 ## Phase 3: Bidirectional Sync Logic
-- [ ] Task: Implement `write` operations in `notionService.ts` for Tasks and Clients.
+- [x] Task: Implement `write` operations in `notionService.ts` for Tasks and Clients. (d5bfe21)
 - [ ] Task: Setup Supabase Edge Functions or internal sync logic to detect changes in Portality and push to Notion.
 - [ ] Task: Write tests for bidirectional data flow (Mocking Notion API).
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Bidirectional Sync' (Protocol in workflow.md)
