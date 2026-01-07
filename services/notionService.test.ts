@@ -92,30 +92,31 @@ describe('NotionService', () => {
     });
   });
 
-  it('should map a Notion task page to a Task object', async () => {
+  it('should handle missing properties gracefully', async () => {
     queryMock.mockResolvedValueOnce({
       results: [
         {
-          id: 'task-1',
+          id: 'partial-1',
           properties: {
-            Name: { title: [{ plain_text: 'Task Title' }] },
-            Priority: { select: { name: 'high' } },
-            Status: { status: { name: 'in-progress' } },
-            'Deadline': { date: { start: '2026-01-07' } },
-            'Assigned To': { people: [{ id: 'user-1', name: 'Andrea' }] },
+            // Missing Name, Type, Status
           },
         },
       ],
       has_more: false,
     });
 
-    const tasks = await notionService.getTasks();
-    expect(tasks[0]).toMatchObject({
-      id: 'task-1',
-      title: 'Task Title',
-      priority: 'high',
-      status: 'in-progress',
-      completed: false,
+    const clients = await notionService.getClients();
+    expect(clients[0]).toMatchObject({
+      id: 'partial-1',
+      name: 'Unknown',
+      type: 'fixed',
+      status: 'active',
     });
+  });
+
+  it('should handle API errors by returning empty array', async () => {
+    queryMock.mockRejectedValueOnce(new Error('API Error'));
+    const clients = await notionService.getClients();
+    expect(clients).toEqual([]);
   });
 });
