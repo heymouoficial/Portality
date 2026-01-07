@@ -13,7 +13,7 @@ export interface AureonMessage {
 }
 
 export interface UIAction {
-    type: 'task_list' | 'confirm_task' | 'quick_stats' | 'calendar_event' | 'loading' | 'connect_notion' | 'client_summary' | 'data_table';
+    type: 'task_list' | 'confirm_task' | 'quick_stats' | 'calendar_event' | 'loading' | 'connect_notion' | 'client_summary' | 'data_table' | 'task_action' | 'team_availability' | 'service_detail';
     data?: any;
 }
 
@@ -47,13 +47,11 @@ const AUREON_SYSTEM_PROMPT = `Eres AUREON, Superinteligencia de MULTIVERSA LAB (
 
 ## Integraciones (UI2Gen)
 Usa bloques de acción solo si es necesario:
-- Lista tareas: \`\`\`action:task_list\n{"filter": "pending"}\n\`\`\`
-- Nueva tarea: \`\`\`action:confirm_task\n{"title": "...", "priority": "high"}\n\`\`\`
-- Conectar Notion: \`\`\`action:connect_notion\n{}\n\`\`\`
-- Resumen Clientes: \`\`\`action:client_summary\n{"clientId": "..."}\n\`\`\`
-- Tablas de Datos: \`\`\`action:data_table\n{"title": "...", "headers": ["Col1", "Col2"], "rows": [["Val1", "Val2"]]}\n\`\`\`
+- Lista tareas: 
 
-Aclara siempre que accedes a la base de conocimientos de [Organización Activa].`;
+action:task_list
+{
+`;
 
 class GeminiService {
     private genAI: GoogleGenerativeAI | null = null;
@@ -115,7 +113,7 @@ class GeminiService {
             if (context.currentView) contextParts.push(`Vista actual: ${context.currentView}`);
             
             if (context.ragContext) {
-                contextParts.push(`\n[CONTEXTO INFORMACIÓN AGENCIA (RAG)]:\nUse esta información si es relevante:\n${context.ragContext}`);
+                contextParts.push(`\n[CONTEXTO INFORMACIÓN AGENCIA (RAG)]:\nUse esta información si es relevante:${context.ragContext}`);
             }
             
             if (context.integrations) {
@@ -130,6 +128,15 @@ class GeminiService {
             } else {
                 contextualMessage = `${systemPrompt}\n\n${userMessage}`;
             }
+        }
+
+        // Force Action Override for specific intents
+        const lowerMsg = userMessage.toLowerCase();
+        if (lowerMsg.includes('resumen') || lowerMsg.includes('cliente') || lowerMsg.includes('proyecto')) {
+            contextualMessage += `\n\n[SYSTEM OVERRIDE]: User requested a summary. You MUST output a Client Summary Action. Do NOT output plain text.\nFormat: 
+action:client_summary
+{
+`;
         }
 
         // Add user message to history
@@ -172,7 +179,8 @@ class GeminiService {
                 const currentKey = geminiKeyManager.getKey();
                 if (currentKey) geminiKeyManager.reportError(currentKey);
                 
-                console.log(`🐍 Hydra: Rotating key and retrying (attempt ${retryCount + 1})...`);
+                console.log(`🐍 Hydra: Rotating key and retrying (attempt ${retryCount + 1})...
+`);
                 this.initModel(); // Refresh with new key
                 return this.chat(userMessage, context, retryCount + 1);
             }
@@ -196,7 +204,8 @@ class GeminiService {
         const actions: UIAction[] = [];
         let cleanContent = text;
 
-        // Match action blocks: ```action:type\n{json}``` (flexible whitespace)
+        // Match action blocks: ```action:type
+        // {json}``` (flexible whitespace)
         const actionRegex = /```action:(\w+)\s*([\s\S]*?)```/g;
         let match;
 

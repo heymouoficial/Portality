@@ -205,7 +205,7 @@ export default function App() {
                     avatar: profile.avatar_url || 'https://ui-avatars.com/api/?name=' + (profile.full_name || 'User'),
                     theme: 'emerald', // Default theme or from settings
                     organizationId: profile.organization_id ? 'ELEVAT' : 'PERSONAL', // Map UUID to App ID if needed, or use real UUID
-                    notionId: notionId,
+                    notionId: profile.notion_id || notionId, // Prioritize DB ID, fallback to auto-match
                     layoutConfig: ['status', 'tasks', 'portfolio'] // Default layout
                 };
                 

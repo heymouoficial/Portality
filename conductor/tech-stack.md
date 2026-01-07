@@ -12,17 +12,17 @@
 - **Features:**
     - Authentication
     - PostgreSQL Database
-    - Realtime Subscriptions
-    - pgvector for RAG Persistence
+    - Realtime Subscriptions (Multi-table)
+    - pgvector for RAG Persistence (Local Search)
 
 ## AI & Intelligence
 - **Core SDK:** Google Generative AI SDK (`@google/genai`)
 - **Agent:** Aureon AI (Custom Agentic Logic)
-- **RAG System:** Flowise (External Integration)
+- **RAG System:** Local pgvector search via `match_documents` RPC. (External Flowise/n8n bypassed for Alpha)
 
 ## Integrations & Orchestration
-- **Data Source:** Notion SDK (Bidirectional Sync)
-- **Automation:** n8n Webhooks
+- **Data Source:** Notion SDK (@notionhq/client) with Realtime Bidirectional Sync via Supabase
+- **Sync Method:** Push (Realtime) + Pull (30s Polling)
 - **Orchestration:** MCP Hub
 
 ## Infrastructure

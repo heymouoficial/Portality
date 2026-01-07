@@ -7,6 +7,9 @@ import { getCurrentBrand } from '../config/branding';
 import ClientSummaryCard from './ClientSummaryCard';
 import TaskCard from './TaskCard';
 import DataTable from './DataTable';
+import TaskActionCard from './TaskActionCard';
+import TeamAvailabilitySnippet from './TeamAvailabilitySnippet';
+import ServiceDetailCard from './ServiceDetailCard';
 import { notionService } from '../services/notionService';
 import { Client, Task, ViewState } from '../types';
 
@@ -50,7 +53,12 @@ const ClientSummaryLoader: React.FC<{ clientId: string; activeTasks: Task[] }> =
     }, [clientId]);
 
     if (loading) return <div className="p-4 flex justify-center"><Loader2 className="animate-spin text-emerald-400" size={24} /></div>;
-    if (!client) return <div className="p-4 text-xs text-rose-400 bg-rose-500/10 rounded-lg border border-rose-500/20">Cliente no encontrado en Notion.</div>;
+    if (!client) return (
+        <div className="p-4 text-xs text-rose-400 bg-rose-500/10 rounded-lg border border-rose-500/20">
+            Cliente "{clientId}" no encontrado en Notion.
+            <br/><span className="opacity-50">Intenta con el nombre exacto.</span>
+        </div>
+    );
 
     // Filter tasks for this client
     // We assume tasks passed to FloatingChat are all active tasks. 
@@ -121,6 +129,10 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             };
 
             const response = await geminiService.chat(inputValue, context);
+            console.log('🤖 [Aureon] Response:', response);
+            if (response.actions && response.actions.length > 0) {
+                console.log('⚡ [Aureon] Actions detected:', response.actions);
+            }
             setMessages(prev => [...prev, response]);
         } catch (error) {
             setMessages(prev => [...prev, {
@@ -250,7 +262,40 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                 );
 
             case 'client_summary':
+                console.log('📦 [FloatingChat] Rendering ClientSummary for:', action.data?.clientId);
                 return <ClientSummaryLoader clientId={action.data?.clientId || ''} activeTasks={tasks} />;
+
+            case 'task_action':
+                const actionTask = tasks.find(t => t.id === action.data?.taskId || t.title.toLowerCase().includes(action.data?.taskId?.toLowerCase()));
+                if (!actionTask) return <p className="text-[10px] text-gray-500 p-2 italic">Tarea "{action.data?.taskId}" no identificada.</p>;
+                return (
+                    <TaskActionCard 
+                        task={actionTask} 
+                        onComplete={(id) => console.log('✅ [Chat] Completing task:', id)} 
+                        onDelete={(id) => console.log('🗑️ [Chat] Deleting task:', id)} 
+                    />
+                );
+
+            case 'team_availability':
+                return (
+                    <TeamAvailabilitySnippet 
+                        name={action.data?.name || 'Miembro'}
+                        role={action.data?.role || 'Especialista'}
+                        taskCount={action.data?.taskCount || 0}
+                        status={action.data?.status || 'offline'}
+                    />
+                );
+
+            case 'service_detail':
+                // For demo, we create a temporary service object if not found
+                const service: Service = {
+                    id: action.data?.serviceId || 's1',
+                    name: action.data?.serviceId || 'Servicio Desconocido',
+                    clientId: '',
+                    responsibleId: 'CM',
+                    frequency: 'monthly'
+                };
+                return <ServiceDetailCard service={service} clientName="Cliente Vinculado" />;
 
             default:
                 return null;

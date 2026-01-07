@@ -4,5 +4,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-## [ ] Track: Portality OS Core Integration & Bidirectional Notion Sync
-*Link: [./conductor/tracks/portality_core_sync_20260107/](./conductor/tracks/portality_core_sync_20260107/)*
+## [x] Track: Alpha Stability & Team Access
+*Link: [./conductor/tracks/alpha_stability_20260107/](./conductor/tracks/alpha_stability_20260107/)*

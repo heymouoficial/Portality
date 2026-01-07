@@ -31,10 +31,11 @@ const HomeView: React.FC<HomeViewProps> = ({ user, tasks, clients, onNavigate, o
     };
 
     const myTasks = tasks.filter(t => 
-        (user.notionId && t.assignedTo === user.notionId) ||
-        t.assignedTo === user.avatar || 
-        t.assignedTo === user.name ||
-        (user.name && t.assignedTo?.toLowerCase().includes(user.name.toLowerCase()))
+        (user.notionId && t.assignedToId === user.notionId) || // 1. Strict ID Match (Best)
+        (user.notionId && t.assignedTo === user.notionId) ||   // 2. ID in name field (legacy)
+        t.assignedTo === user.avatar ||                        // 3. Avatar match
+        t.assignedTo === user.name ||                          // 4. Exact name match
+        (user.name && t.assignedTo?.toLowerCase().includes(user.name.toLowerCase())) // 5. Fuzzy name match
     );
     const pendingTasks = myTasks.filter(t => !t.completed);
     const completedToday = myTasks.filter(t => t.completed).length;

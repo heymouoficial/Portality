@@ -1,0 +1,328 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { useState, useEffect } from 'react';
+import { supabase } from './lib/supabase';
+import { ragService } from './services/ragService';
+import { notionService } from './services/notionService';
+import ConnectionsView from './components/ConnectionsView';
+import TeamView from './components/TeamView';
+import LoginView from './components/LoginView';
+import { SettingsPanel } from './components/SettingsPanel';
+import Header from './components/Header';
+import Sidebar from './components/Sidebar';
+import AureonDock from './components/AureonDock';
+import HomeView from './components/HomeView';
+import NotionView from './components/NotionView';
+import RAGView from './components/RAGView';
+import FloatingChat from './components/FloatingChat';
+import { useAureonLive } from './hooks/useAureonLive';
+import { useRealtimeData } from './hooks/useRealtimeData';
+import { AudioState } from './types';
+import { getCurrentBrand, applyBrandColors } from './config/branding';
+const brand = getCurrentBrand();
+const PROFILES = {
+    andrea: {
+        id: 'andrea', name: 'Andrea Chimaras', role: 'CEO (Strategic)', avatar: 'AC', theme: 'emerald', organizationId: 'ELEVAT/AGORA',
+        layoutConfig: ['status', 'portfolio', 'chronos', 'tasks']
+    },
+    christian: {
+        id: 'christian', name: 'Christian Moreno', role: 'Ops Lead', avatar: 'CM', theme: 'emerald', organizationId: 'ELEVAT/AGORA',
+        layoutConfig: ['status', 'tasks', 'portfolio']
+    },
+    moises: {
+        id: 'moises', name: 'Moisés D Vera', role: 'Tech Lead', avatar: 'MV', theme: 'emerald', organizationId: 'ELEVAT/AGORA',
+        layoutConfig: ['status', 'hub', 'tasks', 'links', 'portfolio', 'chronos']
+    },
+    astursadeth: {
+        id: 'astursadeth', name: 'Architect', role: 'Owner', avatar: 'AS', theme: 'violet', organizationId: 'PERSONAL',
+        layoutConfig: ['status', 'tasks', 'links', 'chronos']
+    }
+};
+const EMAIL_TO_PROFILE = {
+    'andreachimarasonlinebusiness@gmail.com': 'andrea',
+    'christomoreno6@gmail.com': 'christian',
+    'moshequantum@gmail.com': 'moises',
+    'andrea@elevatmarketing.com': 'andrea',
+    'christian@elevatmarketing.com': 'christian',
+    'moises@elevatmarketing.com': 'moises'
+};
+const SESSION_TIMEOUT_MS = 90 * 60 * 1000; // 90 Minutes
+export default function App() {
+    const [session, setSession] = useState(null);
+    const [loadingSession, setLoadingSession] = useState(true);
+    const [demoAuthenticated, setDemoAuthenticated] = useState(false);
+    const [currentUser, setCurrentUser] = useState(brand.id === 'astursadeth' ? PROFILES.astursadeth : PROFILES.andrea);
+    const [currentView, setCurrentView] = useState('home');
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [themeMode, setThemeMode] = useState('dark');
+    const [audioState, setAudioState] = useState(AudioState.IDLE);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [currentOrgId, setCurrentOrgId] = useState('multiversa');
+    const organizations = [
+        { id: 'multiversa', name: 'Multiversa Lab', slug: 'multiversa-lab' },
+        { id: 'elevat', name: 'Elevat / ÁGORA', slug: 'elevat-agora' },
+        { id: 'runa', name: 'Runa Script', slug: 'runa-script' }
+    ];
+    // Data Hook (Replaces manual fetch)
+    const { tasks, clients, services, setTasks } = useRealtimeData(session, currentOrgId);
+    const [notionDocs, setNotionDocs] = useState([]);
+    const [trainingMode, setTrainingMode] = useState({ active: false, reason: '' });
+    const [events, setEvents] = useState([]);
+    const [messages, setMessages] = useState([]);
+    const [isNotionLinked, setIsNotionLinked] = useState(false);
+    // Activity Tracking for 90-min expiry
+    const [lastActivity, setLastActivity] = useState(Date.now());
+    // Dynamic Branding Effect
+    useEffect(() => {
+        const brandConfig = getCurrentBrand(currentOrgId);
+        document.title = `${brandConfig.name} | Portality`;
+        applyBrandColors(brandConfig);
+        // Update user org in state logic if needed, but keeping simple for now
+    }, [currentOrgId]);
+    // Notion Sync Loop
+    useEffect(() => {
+        if (session) {
+            notionService.startSyncLoop();
+        }
+        return () => {
+            notionService.stopSyncLoop();
+        };
+    }, [session]);
+    useEffect(() => {
+        if (!session && !demoAuthenticated)
+            return;
+        const checkSession = () => {
+            const now = Date.now();
+            if (now - lastActivity > SESSION_TIMEOUT_MS) {
+                console.log("Session expired due to inactivity");
+                handleLogout();
+            }
+        };
+        const interval = setInterval(checkSession, 60000); // Check every minute
+        const resetActivity = () => setLastActivity(Date.now());
+        window.addEventListener('mousemove', resetActivity);
+        window.addEventListener('keydown', resetActivity);
+        window.addEventListener('click', resetActivity);
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('mousemove', resetActivity);
+            window.removeEventListener('keydown', resetActivity);
+            window.removeEventListener('click', resetActivity);
+        };
+    }, [session, demoAuthenticated, lastActivity]);
+    // Init Auth & Persistence
+    useEffect(() => {
+        document.title = `${brand.name} | Portality`;
+        const persistedDemoUser = localStorage.getItem('polimata_demo_user');
+        supabase.auth.getSession()
+            .then(({ data: { session } }) => {
+            if (session) {
+                setSession(session);
+                if (session?.user)
+                    mapUserFromSession(session.user);
+                setLoadingSession(false);
+            }
+            else if (persistedDemoUser) {
+                // Demo mode logic
+                const foundKey = Object.keys(EMAIL_TO_PROFILE).find(key => persistedDemoUser.toLowerCase().includes(key));
+                if (foundKey) {
+                    setCurrentUser(PROFILES[EMAIL_TO_PROFILE[foundKey]]);
+                }
+                setDemoAuthenticated(true);
+                setLoadingSession(false);
+            }
+            else {
+                setLoadingSession(false);
+            }
+        })
+            .catch((err) => {
+            console.error("Supabase init error:", err);
+            setLoadingSession(false);
+        });
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session);
+            if (session?.user)
+                mapUserFromSession(session.user);
+        });
+        return () => subscription.unsubscribe();
+    }, []);
+    const mapUserFromSession = async (user) => {
+        try {
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+            if (profile) {
+                console.log('✅ [Auth] Profile found:', profile.full_name);
+                // Attempt to link with Notion Team
+                let notionId = undefined;
+                try {
+                    const team = await notionService.getTeam();
+                    // Prioritize strict email match, fall back to name
+                    const notionMember = team.find(m => (m.email && m.email.toLowerCase() === user.email?.toLowerCase()) ||
+                        (m.name && m.name.toLowerCase() === profile.full_name?.toLowerCase()));
+                    if (notionMember) {
+                        notionId = notionMember.id;
+                        console.log('✅ [Auth] Linked to Notion Member:', notionMember.name);
+                        setIsNotionLinked(true);
+                    }
+                    else {
+                        console.warn('⚠️ [Auth] No matching Notion member found for:', user.email);
+                        setIsNotionLinked(false);
+                    }
+                }
+                catch (e) {
+                    console.warn('Failed to link Notion team member:', e);
+                }
+                // Map Supabase profile to App UserProfile
+                const mappedUser = {
+                    id: profile.id, // ID matches Auth ID
+                    name: profile.full_name || user.email?.split('@')[0],
+                    role: profile.role || 'Member',
+                    avatar: profile.avatar_url || 'https://ui-avatars.com/api/?name=' + (profile.full_name || 'User'),
+                    theme: 'emerald', // Default theme or from settings
+                    organizationId: profile.organization_id ? 'ELEVAT' : 'PERSONAL', // Map UUID to App ID if needed, or use real UUID
+                    notionId: profile.notion_id || notionId, // Prioritize DB ID, fallback to auto-match
+                    layoutConfig: ['status', 'tasks', 'portfolio'] // Default layout
+                };
+                // If specific settings exist
+                if (profile.settings?.theme)
+                    mappedUser.theme = profile.settings.theme;
+                setCurrentUser(mappedUser);
+            }
+            else {
+                // Fallback for demo users or if profile missing
+                console.warn('Profile not found for user, using fallback.');
+                const email = user.email || '';
+                const foundKey = Object.keys(EMAIL_TO_PROFILE).find(key => email.toLowerCase().includes(key));
+                if (foundKey) {
+                    setCurrentUser(PROFILES[EMAIL_TO_PROFILE[foundKey]]);
+                }
+                else {
+                    setCurrentUser({ ...PROFILES.andrea, id: 'moises', name: email.split('@')[0] });
+                }
+            }
+        }
+        catch (e) {
+            console.error('Error mapping user profile:', e);
+        }
+    };
+    const handleAuthSuccess = (email) => {
+        // We need the full user object here, not just email.
+        // LoginView should pass it or we fetch it.
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            if (user)
+                mapUserFromSession(user);
+        });
+        setLastActivity(Date.now());
+    };
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        localStorage.removeItem('polimata_demo_user');
+        setDemoAuthenticated(false);
+        setSession(null);
+    };
+    const handleAddTask = async (title, priority, status = 'todo') => {
+        const newTaskPayload = {
+            title,
+            priority,
+            status,
+            completed: false,
+            tags: ['Inbox'],
+            assigned_to: currentUser.avatar,
+            user_id: session?.user?.id
+        };
+        // Optimistic UI Update
+        const tempId = Date.now().toString();
+        const optimisticTask = {
+            id: tempId,
+            ...newTaskPayload,
+            assignedTo: currentUser.avatar
+        };
+        setTasks(prev => [optimisticTask, ...prev]);
+        // Real Insert
+        const { data, error } = await supabase.from('tasks').insert(newTaskPayload).select().single();
+        if (data) {
+            setTasks(prev => prev.map(t => t.id === tempId ? { ...t, id: data.id } : t));
+        }
+        else {
+            console.error('Error adding task:', error);
+            setTasks(prev => prev.filter(t => t.id !== tempId)); // Revert on error
+        }
+    };
+    const handleUpdateTaskStatus = async (id, newStatus) => {
+        // Optimistic
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t));
+        // Real
+        await supabase.from('tasks').update({ status: newStatus, completed: newStatus === 'done' }).eq('id', id);
+    };
+    const handleToggleTask = async (id) => {
+        const task = tasks.find(t => t.id === id);
+        if (!task)
+            return;
+        const newCompleted = !task.completed;
+        const newStatus = newCompleted ? 'done' : 'todo';
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: newCompleted, status: newStatus } : t));
+        await supabase.from('tasks').update({ completed: newCompleted, status: newStatus }).eq('id', id);
+    };
+    const handleDeleteTask = async (id) => {
+        setTasks(prev => prev.filter(t => t.id !== id));
+        await supabase.from('tasks').delete().eq('id', id);
+    };
+    const handleVoiceTaskCreate = async (title, priority) => {
+        handleAddTask(title, priority);
+        setMessages(prev => [...prev, { id: Date.now().toString(), role: 'system', content: `✓ Tarea creada: ${title}`, timestamp: new Date() }]);
+    };
+    // AUREON LIVE VOICE HOOK
+    const { status: aureonStatus, isTalking: aureonIsTalking, toggleVoice: toggleAureonVoice } = useAureonLive({
+        onTaskCreate: handleVoiceTaskCreate,
+        onKnowledgeQuery: async (q) => {
+            const res = await ragService.retrieveContext(q, 'admin', currentUser.organizationId); // Using 'admin' as default role for now or derived from prompt
+            return res; // retrieveContext returns string directly, not array of objects with content
+        }
+    });
+    useEffect(() => {
+        const html = document.documentElement;
+        if (themeMode === 'dark')
+            html.classList.add('dark');
+        else if (themeMode === 'light')
+            html.classList.remove('dark');
+        else {
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches)
+                html.classList.add('dark');
+            else
+                html.classList.remove('dark');
+        }
+    }, [themeMode]);
+    if (loadingSession)
+        return _jsx("div", { className: "min-h-screen bg-[#020203] flex items-center justify-center", children: _jsx("div", { className: "w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" }) });
+    if (!session)
+        return _jsx(LoginView, { onLoginSuccess: handleAuthSuccess });
+    return (_jsxs("div", { className: "min-h-screen bg-[#020203] text-white selection:bg-indigo-500/30 selection:text-indigo-200 overflow-x-hidden font-sans", children: [_jsxs("div", { className: "fixed inset-0 pointer-events-none overflow-hidden", children: [_jsxs("div", { className: "absolute top-0 left-0 w-full h-full", children: [_jsx("div", { className: "absolute top-[-10%] left-[-5%] w-[50%] h-[50%] bg-gradient-to-br from-cyan-500/20 via-cyan-400/10 to-transparent blur-[80px] animate-[pulse_8s_ease-in-out_infinite]" }), _jsx("div", { className: "absolute top-[10%] right-[-5%] w-[45%] h-[45%] bg-gradient-to-bl from-indigo-500/25 via-purple-500/15 to-transparent blur-[100px] animate-[pulse_10s_ease-in-out_infinite_1s]" }), _jsx("div", { className: "absolute bottom-[5%] left-[15%] w-[35%] h-[35%] bg-gradient-to-tr from-purple-600/20 via-pink-500/10 to-transparent blur-[80px] animate-[pulse_12s_ease-in-out_infinite_2s]" })] }), _jsx("div", { className: "absolute inset-0 opacity-[0.06]", style: {
+                            backgroundImage: `
+                            linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)
+                        `,
+                            backgroundSize: '50px 50px'
+                        } }), _jsx("div", { className: "absolute inset-0 opacity-[0.015]", style: { backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/ %3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")' } })] }), isMobileMenuOpen && (_jsx("div", { className: "fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden animate-in fade-in", onClick: () => setIsMobileMenuOpen(false) })), _jsx(Sidebar, { activeView: currentView, onNavigate: (view) => {
+                    setCurrentView(view);
+                    setIsMobileMenuOpen(false);
+                }, user: currentUser, onLogout: handleLogout, onOpenSettings: () => setIsSettingsOpen(true), organizations: organizations, currentOrgId: currentOrgId, onSwitchOrg: setCurrentOrgId, mobileOpen: isMobileMenuOpen, onMobileClose: () => setIsMobileMenuOpen(false) }), _jsxs("main", { className: `flex-1 relative min-h-screen flex flex-col transition-all duration-300 ${'md:ml-[72px]' // Match collapsed sidebar width
+                }`, children: [_jsx(Header, { user: currentUser, onMobileMenuToggle: () => setIsMobileMenuOpen(!isMobileMenuOpen), isMobileMenuOpen: isMobileMenuOpen, activeView: currentView }), _jsxs("div", { className: "flex-1 mt-14 pb-24", children: [currentView === 'home' && (_jsx(HomeView, { user: currentUser, tasks: tasks.filter(t => t.organizationId === currentOrgId), clients: clients, onNavigate: setCurrentView, onToggleTask: handleToggleTask })), currentView === 'agency' && (_jsx(NotionView, { clients: clients, services: services, tasks: tasks.filter(t => t.organizationId === currentOrgId), onToggleTask: handleToggleTask })), currentView === 'flow' && _jsx(RAGView, { organizationId: currentOrgId }), currentView === 'connections' && (_jsx(ConnectionsView, { organizationId: currentOrgId })), currentView === 'team' && (_jsx(TeamView, { organizationId: currentOrgId }))] })] }), _jsx(FloatingChat, { tasks: tasks.filter(t => t.organizationId === currentOrgId), userName: currentUser.name, pendingTaskCount: tasks.filter(t => t.organizationId === currentOrgId && !t.completed).length, organizationId: currentOrgId, organizationName: organizations.find(o => o.id === currentOrgId)?.name, integrations: {
+                    notion: isNotionLinked ? 'connected' : 'disconnected',
+                    hostinger: currentOrgId === 'multiversa' ? 'connected' : 'disconnected'
+                }, onNavigate: setCurrentView, onAddTask: (task) => {
+                    const newTask = {
+                        id: `t${Date.now()}`,
+                        title: task.title,
+                        priority: task.priority,
+                        status: 'todo',
+                        completed: false,
+                        tags: [],
+                        assignedTo: task.assignedTo,
+                        organizationId: 'ELEVAT'
+                    };
+                    setTasks(prev => [...prev, newTask]);
+                } }), _jsx(AureonDock, { activeView: currentView, onNavigate: setCurrentView, onVoiceClick: toggleAureonVoice }), _jsx(SettingsPanel, { isOpen: isSettingsOpen, onClose: () => setIsSettingsOpen(false), currentTheme: themeMode, onThemeChange: setThemeMode, currentProfileId: currentUser.id, onProfileChange: (id) => { if (PROFILES[id])
+                    setCurrentUser(PROFILES[id]); }, currentOrgId: currentOrgId })] }));
+}
