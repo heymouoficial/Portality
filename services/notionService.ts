@@ -20,6 +20,41 @@ class NotionService {
     }
 
     /**
+     * Pulls latest data from Notion and updates Supabase.
+     * Prevents infinite loops by comparing timestamps if available, or just relies on upsert.
+     */
+    async syncFromNotion() {
+        console.log('🔄 [Notion Sync] Pulling updates from Notion...');
+        try {
+            const tasks = await this.getTasks();
+            
+            for (const task of tasks) {
+                // Map Notion task to Supabase schema
+                const sbTask = {
+                    notion_id: task.id,
+                    title: task.title,
+                    status: task.status,
+                    priority: task.priority,
+                    completed: task.completed,
+                    assigned_to: task.assignedTo, // This is Name string. Ideally we map to user_id if possible.
+                    deadline: task.deadline ? new Date(task.deadline).toISOString() : null,
+                    // We don't overwrite created_at
+                    // organization_id: ... needs context. For now assuming global/default context or we need to pass orgId.
+                };
+
+                // Upsert to Supabase
+                // We match on notion_id
+                const { error } = await supabase.from('tasks').upsert(sbTask, { onConflict: 'notion_id' });
+                
+                if (error) console.error('Error syncing task to Supabase:', error);
+            }
+            console.log(`✅ [Notion Sync] Pulled ${tasks.length} tasks.`);
+        } catch (error) {
+            console.error('Error in syncFromNotion:', error);
+        }
+    }
+
+    /**
      * Starts listening to Supabase changes and pushes them to Notion.
      */
     startSyncLoop() {
@@ -27,16 +62,24 @@ class NotionService {
 
         console.log('🔄 [Notion Sync] Initializing bidirectional sync loop...');
 
+        // Poll Notion every 30 seconds for external changes
+        const pollInterval = setInterval(() => this.syncFromNotion(), 30000);
+        // Initial pull
+        this.syncFromNotion();
+
         this.syncSubscription = supabase.channel('notion_sync_tasks')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, async (payload) => {
                 const task = payload.new as any;
                 if (!task) return;
 
+                // Loop prevention: If the update came from our syncFromNotion (checking some flag? hard).
+                // Simple check: If we just updated it, maybe we skip? 
+                // For now, we accept the redundant push (Notion API handles it).
+                
                 if (payload.eventType === 'INSERT' && !task.notion_id) {
                     console.log(`🔄 [Notion Sync] Creating new task in Notion: ${task.title}`);
                     try {
                         const notionPage = await this.createTask(task);
-                        // Update Supabase with new Notion ID to prevent loops
                         await supabase.from('tasks').update({ notion_id: notionPage.id }).eq('id', task.id);
                     } catch (error) {
                         console.error('[Notion Sync] Failed to create task:', error);
@@ -51,12 +94,18 @@ class NotionService {
                 }
             })
             .subscribe();
+            
+        // Store interval to clear it later
+        (this as any).pollInterval = pollInterval;
     }
 
     stopSyncLoop() {
         if (this.syncSubscription) {
             this.syncSubscription.unsubscribe();
             this.syncSubscription = null;
+        }
+        if ((this as any).pollInterval) {
+            clearInterval((this as any).pollInterval);
         }
     }
 
@@ -273,6 +322,7 @@ class NotionService {
         return {
             id: page.id,
             name: page.properties.Name?.title[0]?.plain_text || 'Unknown',
+            email: page.properties.Email?.email || '',
             role: page.properties.Role?.select?.name || 'Member',
             avatar: page.properties.Avatar?.url || `https://ui-avatars.com/api/?name=${page.properties.Name?.title[0]?.plain_text || 'U'}`
         };

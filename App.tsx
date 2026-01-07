@@ -14,6 +14,7 @@ import NotionView from './components/NotionView';
 import RAGView from './components/RAGView';
 import FloatingChat from './components/FloatingChat';
 import { useAureonLive } from './hooks/useAureonLive';
+import { useRealtimeData } from './hooks/useRealtimeData';
 import { Task, Lead, ViewState, AudioState, ChatMessage, UserProfile, NotionPage, CalendarEvent, Client, Service } from './types';
 import { THEMES } from './constants';
 import { getCurrentBrand, applyBrandColors } from './config/branding';
@@ -21,17 +22,17 @@ import { getCurrentBrand, applyBrandColors } from './config/branding';
 const brand = getCurrentBrand();
 
 const PROFILES: Record<string, UserProfile> = {
-    andrea: { 
+    andrea: {
         id: 'andrea', name: 'Andrea Chimaras', role: 'CEO (Strategic)', avatar: 'AC', theme: 'emerald', organizationId: 'ELEVAT/AGORA',
-        layoutConfig: ['status', 'portfolio', 'chronos', 'tasks'] 
+        layoutConfig: ['status', 'portfolio', 'chronos', 'tasks']
     },
-    christian: { 
+    christian: {
         id: 'christian', name: 'Christian Moreno', role: 'Ops Lead', avatar: 'CM', theme: 'emerald', organizationId: 'ELEVAT/AGORA',
-        layoutConfig: ['status', 'tasks', 'portfolio'] 
+        layoutConfig: ['status', 'tasks', 'portfolio']
     },
-    moises: { 
+    moises: {
         id: 'moises', name: 'Moisés D Vera', role: 'Tech Lead', avatar: 'MV', theme: 'emerald', organizationId: 'ELEVAT/AGORA',
-        layoutConfig: ['status', 'hub', 'tasks', 'links', 'portfolio', 'chronos'] 
+        layoutConfig: ['status', 'hub', 'tasks', 'links', 'portfolio', 'chronos']
     },
     astursadeth: {
         id: 'astursadeth' as any, name: 'Architect', role: 'Owner', avatar: 'AS', theme: 'violet', organizationId: 'PERSONAL',
@@ -64,24 +65,24 @@ export default function App() {
     const [audioState, setAudioState] = useState<AudioState>(AudioState.IDLE);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [clients, setClients] = useState<Client[]>([]);
-    const [services, setServices] = useState<Service[]>([]);
-    const [notionDocs, setNotionDocs] = useState<NotionPage[]>([]);
-    const [trainingMode, setTrainingMode] = useState<{ active: boolean; reason: string }>({ active: false, reason: '' });
-    const [events, setEvents] = useState<CalendarEvent[]>([]);
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
-
-    // Activity Tracking for 90-min expiry
-    const [lastActivity, setLastActivity] = useState<number>(Date.now());
-
-    // Multi-Org State
     const [currentOrgId, setCurrentOrgId] = useState<string>('multiversa');
     const organizations = [
         { id: 'multiversa', name: 'Multiversa Lab', slug: 'multiversa-lab' },
         { id: 'elevat', name: 'Elevat / ÁGORA', slug: 'elevat-agora' },
         { id: 'runa', name: 'Runa Script', slug: 'runa-script' }
     ];
+
+    // Data Hook (Replaces manual fetch)
+    const { tasks, clients, services, setTasks } = useRealtimeData(session, currentOrgId);
+
+    const [notionDocs, setNotionDocs] = useState<NotionPage[]>([]);
+    const [trainingMode, setTrainingMode] = useState<{ active: boolean; reason: string }>({ active: false, reason: '' });
+    const [events, setEvents] = useState<CalendarEvent[]>([]);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [isNotionLinked, setIsNotionLinked] = useState(false);
+
+    // Activity Tracking for 90-min expiry
+    const [lastActivity, setLastActivity] = useState<number>(Date.now());
 
     // Dynamic Branding Effect
     useEffect(() => {
@@ -137,10 +138,14 @@ export default function App() {
             .then(({ data: { session } }) => {
                 if (session) {
                     setSession(session);
-                    if (session?.user?.email) mapUserFromSession(session.user.email);
+                    if (session?.user) mapUserFromSession(session.user);
                     setLoadingSession(false);
                 } else if (persistedDemoUser) {
-                    mapUserFromSession(persistedDemoUser);
+                    // Demo mode logic
+                    const foundKey = Object.keys(EMAIL_TO_PROFILE).find(key => persistedDemoUser.toLowerCase().includes(key));
+                    if (foundKey) {
+                        setCurrentUser(PROFILES[EMAIL_TO_PROFILE[foundKey]]);
+                    }
                     setDemoAuthenticated(true);
                     setLoadingSession(false);
                 } else {
@@ -154,29 +159,82 @@ export default function App() {
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
-            if (session?.user?.email) mapUserFromSession(session.user.email);
+            if (session?.user) mapUserFromSession(session.user);
         });
 
         return () => subscription.unsubscribe();
     }, []);
 
-    const mapUserFromSession = (email: string) => {
-        const profileId = EMAIL_TO_PROFILE[email.toLowerCase()];
-        if (profileId && PROFILES[profileId]) {
-            setCurrentUser(PROFILES[profileId]);
-        } else {
-            // Fuzzy match for domain or local part if needed
-            const foundKey = Object.keys(EMAIL_TO_PROFILE).find(key => email.toLowerCase().includes(key));
-            if (foundKey) {
-                setCurrentUser(PROFILES[EMAIL_TO_PROFILE[foundKey]]);
+    const mapUserFromSession = async (user: any) => {
+        try {
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            if (profile) {
+                console.log('✅ [Auth] Profile found:', profile.full_name);
+                // Attempt to link with Notion Team
+                let notionId = undefined;
+                try {
+                    const team = await notionService.getTeam();
+                    // Prioritize strict email match, fall back to name
+                    const notionMember = team.find(m => 
+                        (m.email && m.email.toLowerCase() === user.email?.toLowerCase()) ||
+                        (m.name && m.name.toLowerCase() === profile.full_name?.toLowerCase())
+                    );
+                    
+                    if (notionMember) {
+                        notionId = notionMember.id;
+                        console.log('✅ [Auth] Linked to Notion Member:', notionMember.name);
+                        setIsNotionLinked(true);
+                    } else {
+                        console.warn('⚠️ [Auth] No matching Notion member found for:', user.email);
+                        setIsNotionLinked(false);
+                    }
+                } catch (e) {
+                    console.warn('Failed to link Notion team member:', e);
+                }
+
+                // Map Supabase profile to App UserProfile
+                const mappedUser: UserProfile = {
+                    id: profile.id, // ID matches Auth ID
+                    name: profile.full_name || user.email?.split('@')[0],
+                    role: profile.role || 'Member',
+                    avatar: profile.avatar_url || 'https://ui-avatars.com/api/?name=' + (profile.full_name || 'User'),
+                    theme: 'emerald', // Default theme or from settings
+                    organizationId: profile.organization_id ? 'ELEVAT' : 'PERSONAL', // Map UUID to App ID if needed, or use real UUID
+                    notionId: notionId,
+                    layoutConfig: ['status', 'tasks', 'portfolio'] // Default layout
+                };
+                
+                // If specific settings exist
+                if (profile.settings?.theme) mappedUser.theme = profile.settings.theme;
+                
+                setCurrentUser(mappedUser);
             } else {
-                setCurrentUser({ ...PROFILES.andrea, id: 'moises' as any, name: email.split('@')[0] });
+                // Fallback for demo users or if profile missing
+                console.warn('Profile not found for user, using fallback.');
+                const email = user.email || '';
+                const foundKey = Object.keys(EMAIL_TO_PROFILE).find(key => email.toLowerCase().includes(key));
+                if (foundKey) {
+                    setCurrentUser(PROFILES[EMAIL_TO_PROFILE[foundKey]]);
+                } else {
+                    setCurrentUser({ ...PROFILES.andrea, id: 'moises' as any, name: email.split('@')[0] });
+                }
             }
+        } catch (e) {
+            console.error('Error mapping user profile:', e);
         }
     };
 
     const handleAuthSuccess = (email: string) => {
-        mapUserFromSession(email);
+        // We need the full user object here, not just email.
+        // LoginView should pass it or we fetch it.
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            if (user) mapUserFromSession(user);
+        });
         setLastActivity(Date.now());
     };
 
@@ -186,95 +244,6 @@ export default function App() {
         setDemoAuthenticated(false);
         setSession(null);
     };
-
-    // Load User Data & RAG Context
-    useEffect(() => {
-        if (!currentUser || !session) return;
-
-        const fetchAllData = async () => {
-            // Fetch Tasks
-            const { data: tasksData, error: tasksError } = await supabase
-                .from('tasks')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (tasksError) {
-                console.error('[Supabase] Error fetching tasks:', tasksError);
-                setTasks([]); // Set to empty on error, no mock data
-            } else {
-                setTasks(tasksData.map(t => ({
-                    id: t.id,
-                    title: t.title,
-                    priority: t.priority || 'medium',
-                    status: t.status || 'todo',
-                    completed: t.completed || false,
-                    tags: t.tags || [],
-                    assignedTo: t.assigned_to || 'MV',
-                    organizationId: t.organization_id || 'ELEVAT'
-                })));
-            }
-
-            // Fetch Clients
-            const { data: clientsData, error: clientsError } = await supabase
-                .from('clients')
-                .select('*');
-
-            if (clientsError) {
-                console.error('[Supabase] Error fetching clients:', clientsError);
-                setClients([]); // Set to empty on error
-            } else {
-                setClients(clientsData || []);
-            }
-
-            // Fetch Services
-            const { data: servicesData, error: servicesError } = await supabase
-                .from('services')
-                .select('*');
-
-            if (servicesError) {
-                console.error('[Supabase] Error fetching services:', servicesError);
-                setServices([]);
-            } else {
-                setServices(servicesData || []);
-            }
-            
-            // Fetch Events
-            const { data: eventsData } = await supabase
-                .from('events')
-                .select('*')
-                .order('start_time', { ascending: true })
-                .limit(5);
-
-            if (eventsData) {
-                setEvents(eventsData.map(e => ({
-                    id: e.id,
-                    title: e.title,
-                    startTime: new Date(e.start_time),
-                    type: e.type,
-                    link: e.link,
-                    description: e.description
-                })));
-            }
-        };
-
-        fetchAllData();
-
-        // Realtime Subscription
-        const channel = supabase.channel('app_realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, fetchAllData)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, fetchAllData)
-            .subscribe();
-            
-        // Initial Message
-        setMessages([
-            { id: Date.now().toString(), role: 'assistant', content: brand.defaultAssistantMessage, timestamp: new Date() }
-        ]);
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [currentUser, session]);
-
 
     const handleAddTask = async (title: string, priority: 'high' | 'medium' | 'low', status: Task['status'] = 'todo') => {
         const newTaskPayload = {
@@ -384,7 +353,7 @@ export default function App() {
                     }}
                 ></div>
                 {/* NOISE TEXTURE - CSS ONLY */}
-                <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")' }}></div>
+                <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/ %3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")' }}></div>
             </div>
 
             {/* MOBILE OVERLAY */}
@@ -411,9 +380,8 @@ export default function App() {
                 onMobileClose={() => setIsMobileMenuOpen(false)}
             />
 
-            <main className={`flex-1 relative min-h-screen flex flex-col transition-all duration-300 ${
-                'md:ml-[72px]' // Match collapsed sidebar width
-            }`}>
+            <main className={`flex-1 relative min-h-screen flex flex-col transition-all duration-300 ${'md:ml-[72px]' // Match collapsed sidebar width
+            }`}> 
                 <Header 
                     user={currentUser} 
                     onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -465,7 +433,7 @@ export default function App() {
                 organizationId={currentOrgId}
                 organizationName={organizations.find(o => o.id === currentOrgId)?.name}
                 integrations={{
-                    notion: currentOrgId === 'multiversa' ? 'disconnected' : 'connected',
+                    notion: isNotionLinked ? 'connected' : 'disconnected',
                     hostinger: currentOrgId === 'multiversa' ? 'connected' : 'disconnected'
                 }}
                 onNavigate={setCurrentView}

@@ -18,6 +18,11 @@ interface HomeViewProps {
 const HomeView: React.FC<HomeViewProps> = ({ user, tasks, clients, onNavigate, onToggleTask }) => {
     const brand = getCurrentBrand();
     
+    // Debug Log
+    React.useEffect(() => {
+        console.log('[HomeView] Tasks updated:', tasks.length);
+    }, [tasks]);
+
     const getGreeting = () => {
         const hour = new Date().getHours();
         if (hour < 12) return 'Buenos días';
@@ -26,6 +31,7 @@ const HomeView: React.FC<HomeViewProps> = ({ user, tasks, clients, onNavigate, o
     };
 
     const myTasks = tasks.filter(t => 
+        (user.notionId && t.assignedTo === user.notionId) ||
         t.assignedTo === user.avatar || 
         t.assignedTo === user.name ||
         (user.name && t.assignedTo?.toLowerCase().includes(user.name.toLowerCase()))

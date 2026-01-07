@@ -12,11 +12,11 @@
 - [x] Task: Refactor `ragService.ts` to query `match_documents` RPC directly from Supabase, removing external Flowise dependencies. (Verified)
 - [x] Task: Conductor - User Manual Verification 'Phase 2: RAG & pgvector' (Protocol in workflow.md) (713d2c5)
 
-## Phase 3: Identity Mapping & Session Filtering
-- [ ] Task: Write tests for email-based identity mapping between Supabase Auth and Notion Team DB.
-- [ ] Task: Implement strict email mapping in `App.tsx` to link sessions to Notion `notionId`.
-- [ ] Task: Update `HomeView` and `NotionView` to apply global filtering based on `currentUser.notionId`.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Identity & Filtering' (Protocol in workflow.md)
+## Phase 3: Identity Mapping & Session Filtering [checkpoint: 4cc9b78]
+- [x] Task: Write tests for email-based identity mapping between Supabase Auth and Notion Team DB. (Verified in tests/auth_mapping.test.ts)
+- [x] Task: Implement strict email mapping in `App.tsx` to link sessions to Notion `notionId`. (Impl & Logged)
+- [x] Task: Update `HomeView` and `NotionView` to apply global filtering based on `currentUser.notionId`. (Impl)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Identity & Filtering' (Protocol in workflow.md) (4cc9b78)
 
 ## Phase 4: Generative UI Expansion
 - [ ] Task: Write tests for intent parsing logic in `geminiService.ts` (detecting requests for summaries vs actions).
