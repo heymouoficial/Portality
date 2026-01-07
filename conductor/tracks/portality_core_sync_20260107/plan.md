@@ -42,8 +42,10 @@
 - [x] Task: Verify User Session Filtering: Add debug logs to `App.tsx` profile mapping and `HomeView` filtering. (28898d6)
 - [x] Task: Conductor - User Manual Verification 'Phase 5.5: Hotfix 2' (Protocol in workflow.md) (28898d6)
 
-## Phase 6: UI Hydration & Final Polish [checkpoint: 559ea40]
-- [x] Task: Implement session-aware hydration logic for `Dashboard.tsx`. (7ce8992)
-- [x] Task: Integrate `Omnipresent Aureon` chatbot with the new sync and rendering logic. (a99c0f5)
-- [x] Task: Final end-to-end verification of Notion mirroring. (Automated tests passed)
-- [x] Task: Conductor - User Manual Verification 'Phase 6: UI & Final Polish' (Protocol in workflow.md) (559ea40)
+## Phase 6.5: Alpha v1.0 Final Stabilization (Hotfix 3)
+- [ ] Task: **Aureon Tab Fix:** Debug `RAGView.tsx` initialization and `ragService` to prevent hanging.
+- [ ] Task: **Realtime UI Sync:** Verify `App.tsx` subscription and `fetchAllData` trigger. Ensure RLS policies allow read.
+- [ ] Task: **Generative UI:** Force JSON output in `geminiService` prompt and improve `FloatingChat` action rendering robustness.
+- [ ] Task: **Auth Mapping:** Verify Notion Team mapping logic with real data patterns (logging/debugging).
+- [ ] Task: **Sync Logic:** Validate Polling/Push loop stability and concurrency.
+- [ ] Task: Conductor - User Manual Verification 'Phase 6.5: Hotfix 3' (Protocol in workflow.md)
