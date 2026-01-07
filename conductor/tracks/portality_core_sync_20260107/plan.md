@@ -35,8 +35,8 @@
 - [x] Task: Overhaul Manual Auth to ensure login redirects to LiquidGlass Dashboard with correct user context. (Verified logic in LoginView/App)
 - [x] Task: Conductor - User Manual Verification 'Phase 5: Alpha v1.0 Hotfix' (Protocol in workflow.md) (456cc6b)
 
-## Phase 6: UI Hydration & Final Polish
-- [x] Task: Implement session-aware hydration logic for `Dashboard.tsx`. (HomeView updated)
-- [x] Task: Integrate `Omnipresent Aureon` chatbot with the new sync and rendering logic. (Impl in Phase 2/4/5)
-- [ ] Task: Final end-to-end verification of Notion mirroring.
-- [ ] Task: Conductor - User Manual Verification 'Phase 6: UI & Final Polish' (Protocol in workflow.md)
+## Phase 6: UI Hydration & Final Polish [checkpoint: 559ea40]
+- [x] Task: Implement session-aware hydration logic for `Dashboard.tsx`. (7ce8992)
+- [x] Task: Integrate `Omnipresent Aureon` chatbot with the new sync and rendering logic. (a99c0f5)
+- [x] Task: Final end-to-end verification of Notion mirroring. (Automated tests passed)
+- [x] Task: Conductor - User Manual Verification 'Phase 6: UI & Final Polish' (Protocol in workflow.md) (559ea40)
