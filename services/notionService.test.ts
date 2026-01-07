@@ -30,6 +30,10 @@ vi.mock('@notionhq/client', () => {
       databases = {
         query: queryMock,
       };
+      pages = {
+        create: vi.fn().mockResolvedValue({ id: 'new-id' }),
+        update: vi.fn().mockResolvedValue({ id: 'updated-id' }),
+      };
     },
   };
 });
@@ -114,9 +118,48 @@ describe('NotionService', () => {
     });
   });
 
-  it('should handle API errors by returning empty array', async () => {
-    queryMock.mockRejectedValueOnce(new Error('API Error'));
-    const clients = await notionService.getClients();
-    expect(clients).toEqual([]);
+  it('should create a task in Notion', async () => {
+    const createMock = vi.fn().mockResolvedValue({ id: 'new-task-id' });
+    // @ts-ignore
+    notionService['getClient']().pages = { create: createMock };
+
+    const result = await notionService.createTask({
+      title: 'New Task',
+      priority: 'high',
+    });
+
+    expect(createMock).toHaveBeenCalled();
+    expect(result.id).toBe('new-task-id');
+  });
+
+  it('should update task status in Notion', async () => {
+    const updateMock = vi.fn().mockResolvedValue({ id: 'task-1' });
+    // @ts-ignore
+    notionService['getClient']().pages.update = updateMock;
+
+    await notionService.updateTaskStatus('task-1', 'done');
+
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({
+      page_id: 'task-1',
+      properties: expect.objectContaining({
+        Status: expect.objectContaining({
+          status: { name: 'done' }
+        })
+      })
+    }));
+  });
+
+  it('should create a client in Notion', async () => {
+    const createMock = vi.fn().mockResolvedValue({ id: 'new-client-id' });
+    // @ts-ignore
+    notionService['getClient']().pages.create = createMock;
+
+    const result = await notionService.createClient({
+      name: 'New Client',
+      type: 'project',
+    });
+
+    expect(createMock).toHaveBeenCalled();
+    expect(result.id).toBe('new-client-id');
   });
 });

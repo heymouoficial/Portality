@@ -100,6 +100,98 @@ class NotionService {
         return results.map(page => this.mapCalendarEvent(page));
     }
 
+    /**
+     * Creates a new task in the Notion Tasks database.
+     */
+    async createTask(task: Partial<Task>): Promise<any> {
+        const client = this.getClient();
+        const dbId = import.meta.env.VITE_NOTION_DB_TASKS;
+        if (!client || !dbId) throw new Error('Notion client or Task DB ID missing');
+
+        const properties: any = {
+            Name: {
+                title: [{ text: { content: task.title || 'Untitled' } }]
+            },
+            Status: {
+                status: { name: task.status || 'todo' }
+            },
+            Priority: {
+                select: { name: task.priority || 'medium' }
+            }
+        };
+
+        if (task.clientId) {
+            properties.Client = {
+                relation: [{ id: task.clientId }]
+            };
+        }
+
+        try {
+            const response = await client.pages.create({
+                parent: { database_id: dbId },
+                properties
+            });
+            return response;
+        } catch (error) {
+            console.error('Error creating task in Notion:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Creates a new client in the Notion Clients database.
+     */
+    async createClient(clientData: Partial<Client>): Promise<any> {
+        const client = this.getClient();
+        const dbId = import.meta.env.VITE_NOTION_DB_CLIENTS;
+        if (!client || !dbId) throw new Error('Notion client or Client DB ID missing');
+
+        const properties: any = {
+            Name: {
+                title: [{ text: { content: clientData.name || 'New Client' } }]
+            },
+            Type: {
+                select: { name: clientData.type || 'fixed' }
+            },
+            Status: {
+                select: { name: clientData.status || 'active' }
+            }
+        };
+
+        try {
+            const response = await client.pages.create({
+                parent: { database_id: dbId },
+                properties
+            });
+            return response;
+        } catch (error) {
+            console.error('Error creating client in Notion:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Updates the status of an existing task in Notion.
+     */
+    async updateTaskStatus(taskId: string, status: Task['status']): Promise<void> {
+        const client = this.getClient();
+        if (!client) return;
+
+        try {
+            await client.pages.update({
+                page_id: taskId,
+                properties: {
+                    Status: {
+                        status: { name: status }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error updating task status in Notion:', error);
+            throw error;
+        }
+    }
+
     // --- Mappers ---
 
     private mapClient(page: any): Client {
