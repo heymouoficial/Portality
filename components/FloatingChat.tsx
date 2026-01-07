@@ -11,7 +11,7 @@ import TaskActionCard from './TaskActionCard';
 import TeamAvailabilitySnippet from './TeamAvailabilitySnippet';
 import ServiceDetailCard from './ServiceDetailCard';
 import { notionService } from '../services/notionService';
-import { Client, Task, ViewState } from '../types';
+import { Client, Task, Service, ViewState } from '../types';
 
 interface FloatingChatProps {
     tasks?: Task[];

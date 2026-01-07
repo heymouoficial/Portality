@@ -21,6 +21,13 @@ export const ragService = {
     },
 
     /**
+     * Returns all available sources
+     */
+    async getSources(): Promise<KnowledgeSource[]> {
+        return MEMORY_VECTOR_STORE;
+    },
+
+    /**
      * Ingests a raw content string
      */
     async ingestDocument(
