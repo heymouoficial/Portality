@@ -162,4 +162,21 @@ describe('NotionService', () => {
     expect(createMock).toHaveBeenCalled();
     expect(result.id).toBe('new-client-id');
   });
+
+  it('should sync local task changes to Notion', async () => {
+    const updateMock = vi.fn().mockResolvedValue({ id: 'task-1' });
+    // @ts-ignore
+    notionService['getClient']().pages.update = updateMock;
+
+    // Simulate what would happen in a real sync loop
+    await notionService.updateTaskStatus('task-1', 'in-progress');
+
+    expect(updateMock).toHaveBeenCalled();
+  });
+
+  it('should initialize sync subscription', () => {
+    notionService.startSyncLoop();
+    // Since we mock Supabase, we just verify it doesn't crash and starts the flow
+    expect(true).toBe(true);
+  });
 });

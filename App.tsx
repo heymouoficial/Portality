@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { ragService } from './services/ragService';
+import { notionService } from './services/notionService';
 import ConnectionsView from './components/ConnectionsView';
 import TeamView from './components/TeamView';
 import LoginView from './components/LoginView';
@@ -90,6 +91,16 @@ export default function App() {
         
         // Update user org in state logic if needed, but keeping simple for now
     }, [currentOrgId]);
+
+    // Notion Sync Loop
+    useEffect(() => {
+        if (session) {
+            notionService.startSyncLoop();
+        }
+        return () => {
+            notionService.stopSyncLoop();
+        };
+    }, [session]);
 
     useEffect(() => {
         if (!session && !demoAuthenticated) return;

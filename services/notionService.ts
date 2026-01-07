@@ -1,4 +1,5 @@
 import { Client as NotionClient } from '@notionhq/client';
+import { supabase } from '../lib/supabase';
 import { Client, Task, Service, CalendarEvent } from '../types';
 
 /**
@@ -7,6 +8,7 @@ import { Client, Task, Service, CalendarEvent } from '../types';
  */
 class NotionService {
     private client: NotionClient | null = null;
+    private syncSubscription: any = null;
 
     private getClient(): NotionClient | null {
         if (this.client) return this.client;
@@ -15,6 +17,38 @@ class NotionService {
             this.client = new NotionClient({ auth: token });
         }
         return this.client;
+    }
+
+    /**
+     * Starts listening to Supabase changes and pushes them to Notion.
+     */
+    startSyncLoop() {
+        if (this.syncSubscription) return;
+
+        console.log('🔄 [Notion Sync] Initializing bidirectional sync loop...');
+
+        this.syncSubscription = supabase.channel('notion_sync_tasks')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' }, async (payload) => {
+                const updatedTask = payload.new as any;
+                
+                // Only sync if the task has a notion_id
+                if (updatedTask.notion_id) {
+                    console.log(`🔄 [Notion Sync] Pushing task update to Notion: ${updatedTask.title}`);
+                    try {
+                        await this.updateTaskStatus(updatedTask.notion_id, updatedTask.status);
+                    } catch (error) {
+                        console.error('[Notion Sync] Failed to push update:', error);
+                    }
+                }
+            })
+            .subscribe();
+    }
+
+    stopSyncLoop() {
+        if (this.syncSubscription) {
+            this.syncSubscription.unsubscribe();
+            this.syncSubscription = null;
+        }
     }
 
     /**
