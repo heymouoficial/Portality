@@ -4,7 +4,7 @@ import {
     Monitor, HardDrive, Network, Globe,
     ChevronDown, Bell, Clock
 } from 'lucide-react';
-import { UserProfile } from '../types';
+import { UserProfile, ViewState } from '../types';
 import { getCurrentBrand } from '../config/branding';
 import { vpsService, VPSMetrics } from '../services/vpsService';
 

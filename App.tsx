@@ -328,8 +328,8 @@ export default function App() {
     const { status: aureonStatus, isTalking: aureonIsTalking, toggleVoice: toggleAureonVoice } = useAureonLive({
         onTaskCreate: handleVoiceTaskCreate,
         onKnowledgeQuery: async (q) => {
-            const res = await ragService.search(q, currentUser.organizationId);
-            return res.map(d => d.content).join('\n');
+            const res = await ragService.retrieveContext(q, 'admin', currentUser.organizationId); // Using 'admin' as default role for now or derived from prompt
+            return res; // retrieveContext returns string directly, not array of objects with content
         }
     });
 
