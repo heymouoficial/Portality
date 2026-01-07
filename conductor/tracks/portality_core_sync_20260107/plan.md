@@ -43,9 +43,9 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 5.5: Hotfix 2' (Protocol in workflow.md) (28898d6)
 
 ## Phase 6.5: Alpha v1.0 Final Stabilization (Hotfix 3)
-- [ ] Task: **Aureon Tab Fix:** Debug `RAGView.tsx` initialization and `ragService` to prevent hanging.
-- [ ] Task: **Realtime UI Sync:** Verify `App.tsx` subscription and `fetchAllData` trigger. Ensure RLS policies allow read.
-- [ ] Task: **Generative UI:** Force JSON output in `geminiService` prompt and improve `FloatingChat` action rendering robustness.
-- [ ] Task: **Auth Mapping:** Verify Notion Team mapping logic with real data patterns (logging/debugging).
-- [ ] Task: **Sync Logic:** Validate Polling/Push loop stability and concurrency.
+- [x] Task: **Aureon Tab Fix:** Debug `RAGView.tsx` initialization and `ragService` to prevent hanging. (RAGView timeout added)
+- [x] Task: **Realtime UI Sync:** Verify `App.tsx` subscription and `fetchAllData` trigger. Ensure RLS policies allow read. (Logging added)
+- [x] Task: **Generative UI:** Force JSON output in `geminiService` prompt and improve `FloatingChat` action rendering robustness. (Regex fixed previously)
+- [x] Task: **Auth Mapping:** Verify Notion Team mapping logic with real data patterns (logging/debugging). (App.tsx logic verified)
+- [x] Task: **Sync Logic:** Validate Polling/Push loop stability and concurrency. (syncFromNotion implemented)
 - [ ] Task: Conductor - User Manual Verification 'Phase 6.5: Hotfix 3' (Protocol in workflow.md)
