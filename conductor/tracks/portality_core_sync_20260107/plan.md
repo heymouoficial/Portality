@@ -36,7 +36,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 5: Alpha v1.0 Hotfix' (Protocol in workflow.md) (456cc6b)
 
 ## Phase 6: UI Hydration & Final Polish
-- [ ] Task: Implement session-aware hydration logic for `Dashboard.tsx`.
-- [ ] Task: Integrate `Omnipresent Aureon` chatbot with the new sync and rendering logic.
+- [x] Task: Implement session-aware hydration logic for `Dashboard.tsx`. (HomeView updated)
+- [x] Task: Integrate `Omnipresent Aureon` chatbot with the new sync and rendering logic. (Impl in Phase 2/4/5)
 - [ ] Task: Final end-to-end verification of Notion mirroring.
 - [ ] Task: Conductor - User Manual Verification 'Phase 6: UI & Final Polish' (Protocol in workflow.md)
