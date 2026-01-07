@@ -53,13 +53,7 @@ class NotionService {
         if (!dbId) return [];
 
         const results = await this.queryDatabase(dbId);
-        // Mapping logic will be implemented in the next task
-        return results.map((page: any) => ({
-            id: page.id,
-            name: page.properties.Name?.title[0]?.plain_text || 'Unknown',
-            type: 'fixed',
-            status: 'active'
-        })) as Client[];
+        return results.map(page => this.mapClient(page));
     }
 
     /**
@@ -70,11 +64,7 @@ class NotionService {
         if (!dbId) return [];
 
         const results = await this.queryDatabase(dbId);
-        return results.map((page: any) => ({
-            id: page.id,
-            name: page.properties.Name?.title[0]?.plain_text || 'Unknown',
-            clientId: ''
-        })) as Service[];
+        return results.map(page => this.mapService(page));
     }
 
     /**
@@ -85,13 +75,7 @@ class NotionService {
         if (!dbId) return [];
 
         const results = await this.queryDatabase(dbId);
-        return results.map((page: any) => ({
-            id: page.id,
-            title: page.properties.Name?.title[0]?.plain_text || 'Untitled',
-            priority: 'medium',
-            status: 'todo',
-            completed: false
-        })) as Task[];
+        return results.map(page => this.mapTask(page));
     }
 
     /**
@@ -102,11 +86,7 @@ class NotionService {
         if (!dbId) return [];
 
         const results = await this.queryDatabase(dbId);
-        return results.map((page: any) => ({
-            id: page.id,
-            name: page.properties.Name?.title[0]?.plain_text || 'Unknown',
-            role: 'Member'
-        }));
+        return results.map(page => this.mapTeamMember(page));
     }
 
     /**
@@ -117,11 +97,59 @@ class NotionService {
         if (!dbId) return [];
 
         const results = await this.queryDatabase(dbId);
-        return results.map((page: any) => ({
+        return results.map(page => this.mapCalendarEvent(page));
+    }
+
+    // --- Mappers ---
+
+    private mapClient(page: any): Client {
+        return {
+            id: page.id,
+            name: page.properties.Name?.title[0]?.plain_text || 'Unknown',
+            type: (page.properties.Type?.select?.name as any) || 'fixed',
+            status: (page.properties.Status?.select?.name as any) || 'active',
+            notion_id: page.id
+        };
+    }
+
+    private mapService(page: any): Service {
+        return {
+            id: page.id,
+            name: page.properties.Name?.title[0]?.plain_text || 'Unknown',
+            clientId: page.properties.Client?.relation[0]?.id || '',
+            frequency: (page.properties.Frequency?.select?.name as any) || 'monthly'
+        };
+    }
+
+    private mapTask(page: any): Task {
+        return {
+            id: page.id,
+            title: page.properties.Name?.title[0]?.plain_text || 'Untitled',
+            priority: (page.properties.Priority?.select?.name as any) || 'medium',
+            status: (page.properties.Status?.status?.name as any) || 'todo',
+            completed: page.properties.Status?.status?.name === 'done',
+            deadline: page.properties.Deadline?.date?.start ? new Date(page.properties.Deadline.date.start) : undefined,
+            clientId: page.properties.Client?.relation[0]?.id || '',
+            assignedTo: page.properties['Assigned To']?.people[0]?.name || ''
+        };
+    }
+
+    private mapTeamMember(page: any): any {
+        return {
+            id: page.id,
+            name: page.properties.Name?.title[0]?.plain_text || 'Unknown',
+            role: page.properties.Role?.select?.name || 'Member',
+            avatar: page.properties.Avatar?.url || `https://ui-avatars.com/api/?name=${page.properties.Name?.title[0]?.plain_text || 'U'}`
+        };
+    }
+
+    private mapCalendarEvent(page: any): CalendarEvent {
+        return {
             id: page.id,
             title: page.properties.Name?.title[0]?.plain_text || 'Meeting',
-            startTime: new Date()
-        })) as CalendarEvent[];
+            startTime: page.properties.Date?.date?.start ? new Date(page.properties.Date.date.start) : new Date(),
+            type: (page.properties.Type?.select?.name as any) || 'meeting'
+        };
     }
 
     /**

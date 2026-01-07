@@ -67,20 +67,55 @@ describe('NotionService', () => {
     expect(Array.isArray(events)).toBe(true);
   });
 
-  it('should handle paginated results', async () => {
+  it('should map a Notion client page to a Client object', async () => {
     queryMock.mockResolvedValueOnce({
-      results: [{ id: 'page-1', properties: { Name: { title: [{ plain_text: 'Page 1' }] } } }],
-      next_cursor: 'cursor-1',
-      has_more: true,
-    });
-    queryMock.mockResolvedValueOnce({
-      results: [{ id: 'page-2', properties: { Name: { title: [{ plain_text: 'Page 2' }] } } }],
-      next_cursor: null,
+      results: [
+        {
+          id: 'client-1',
+          properties: {
+            Name: { title: [{ plain_text: 'Client Name' }] },
+            Type: { select: { name: 'project' } },
+            Status: { select: { name: 'risk' } },
+          },
+        },
+      ],
       has_more: false,
     });
 
     const clients = await notionService.getClients();
-    expect(queryMock).toHaveBeenCalledTimes(2);
-    expect(clients.length).toBe(2);
+    expect(clients[0]).toEqual({
+      id: 'client-1',
+      name: 'Client Name',
+      type: 'project',
+      status: 'risk',
+      notion_id: 'client-1',
+    });
+  });
+
+  it('should map a Notion task page to a Task object', async () => {
+    queryMock.mockResolvedValueOnce({
+      results: [
+        {
+          id: 'task-1',
+          properties: {
+            Name: { title: [{ plain_text: 'Task Title' }] },
+            Priority: { select: { name: 'high' } },
+            Status: { status: { name: 'in-progress' } },
+            'Deadline': { date: { start: '2026-01-07' } },
+            'Assigned To': { people: [{ id: 'user-1', name: 'Andrea' }] },
+          },
+        },
+      ],
+      has_more: false,
+    });
+
+    const tasks = await notionService.getTasks();
+    expect(tasks[0]).toMatchObject({
+      id: 'task-1',
+      title: 'Task Title',
+      priority: 'high',
+      status: 'in-progress',
+      completed: false,
+    });
   });
 });
