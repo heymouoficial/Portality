@@ -11,7 +11,7 @@ interface LoginViewProps {
   onLoginSuccess: (email: string) => void;
 }
 
-type AuthMode = 'landing' | 'login' | 'signup' | 'reset' | 'reset-sent';
+type AuthMode = 'landing' | 'login' | 'signup' | 'reset' | 'reset-sent' | 'update-password';
 
 const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<AuthMode>('landing');
@@ -21,6 +21,32 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
+
+  // Recovery Flow Listener
+  useEffect(() => {
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setMode("update-password");
+      }
+    });
+  }, []);
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+        const { error } = await supabase.auth.updateUser({ password: password });
+        if (error) throw error;
+        // Password updated, now log them in officially
+        if (email) onLoginSuccess(email); // Fallback if session user email is tricky
+        else window.location.reload(); // Force reload to trigger main app auth check
+    } catch (err: any) {
+        setError(err.message || "Error al actualizar contraseña");
+    } finally {
+        setLoading(false);
+    }
+  };
 
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<AureonMessage[]>([
@@ -416,16 +442,29 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     }
 
     return (
-      <form onSubmit={mode === 'login' ? handleLogin : mode === 'signup' ? handleSignup : handlePasswordReset} className="flex flex-col gap-5 w-full max-w-sm animate-in slide-in-from-bottom-4 duration-500">
+      <form onSubmit={
+          mode === 'login' ? handleLogin : 
+          mode === 'signup' ? handleSignup : 
+          mode === 'update-password' ? handleUpdatePassword :
+          handlePasswordReset
+        } className="flex flex-col gap-5 w-full max-w-sm animate-in slide-in-from-bottom-4 duration-500">
         <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-white">{mode === 'login' ? 'Bienvenido' : mode === 'signup' ? 'Solicitar Acceso' : 'Recuperar'}</h2>
+            <h2 className="text-2xl font-bold text-white">
+                {mode === 'login' ? 'Bienvenido' : 
+                 mode === 'signup' ? 'Solicitar Acceso' : 
+                 mode === 'update-password' ? 'Nueva Contraseña' :
+                 'Recuperar'}
+            </h2>
             <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider">
-                {mode === 'login' ? 'Identifícate para continuar' : 'Closed Beta Invitation'}
+                {mode === 'login' ? 'Identifícate para continuar' : 
+                 mode === 'update-password' ? 'Establece tu acceso seguro' :
+                 'Closed Beta Invitation'}
             </p>
         </div>
 
         {/* Inputs */}
         <div className="space-y-4">
+            {mode !== 'update-password' && (
             <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Email Corporativo</label>
                 <div className="relative group">
@@ -440,10 +479,13 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                     />
                 </div>
             </div>
+            )}
 
             {mode !== 'reset' && (
             <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Contraseña</label>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">
+                    {mode === 'update-password' ? 'Nueva Contraseña' : 'Contraseña'}
+                </label>
                 <div className="relative group">
                     <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-violet-400 transition-colors" />
                     <input
@@ -485,7 +527,10 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
           <div className="relative h-full w-full bg-[#050505] rounded-xl flex items-center justify-center gap-2 py-3.5 group-hover:bg-[#0A0A0A] transition-colors">
             {loading ? <Loader2 size={18} className="animate-spin text-white" /> : (
               <span className="text-white font-bold text-sm tracking-wide flex items-center gap-2">
-                {mode === 'login' ? 'Entrar al Portal' : mode === 'signup' ? 'Verificar Invitación' : 'Enviar'}
+                {mode === 'login' ? 'Entrar al Portal' : 
+                 mode === 'signup' ? 'Verificar Invitación' : 
+                 mode === 'update-password' ? 'Guardar y Entrar' :
+                 'Enviar'}
                 {!loading && <ArrowRight size={14} />}
               </span>
             )}

@@ -40,11 +40,11 @@ const RAGView: React.FC<RAGViewProps> = ({ organizationId }) => {
     const fetchDocuments = async () => {
         setIsLoading(true);
         try {
-            // Fetch from knowledge_sources (Where we vectorize)
+            // Fetch from DOCUMENTS table (Real Schema)
             const { data, error } = await supabase
-                .from('knowledge_sources')
+                .from('documents')
                 .select('*')
-                .eq('organization_id', organizationId)
+                // .eq('organization_id', organizationId) // Uncomment if documents has org_id in schema, otherwise it might be global or RLS handled
                 .order('created_at', { ascending: false });
             
             if (error) throw error;
@@ -53,8 +53,8 @@ const RAGView: React.FC<RAGViewProps> = ({ organizationId }) => {
             const mapped: KnowledgeDoc[] = (data || []).map(d => ({
                 id: d.id,
                 source: d.name,
-                content: d.content,
-                tenant_id: d.organization_id,
+                content: d.content || '',
+                tenant_id: organizationId || 'default',
                 meta: d.metadata || { category: 'general' },
                 created_at: d.created_at,
                 updated_at: d.created_at

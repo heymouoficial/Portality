@@ -58,30 +58,25 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     const fetchTeam = async () => {
         setLoadingTeam(true);
         try {
-            // Join organization_members with profiles
+            // Query PROFILES table directly based on organization_id
             const { data, error } = await supabase
-                .from('organization_members')
-                .select(`
-                    id, role, status, joined_at,
-                    profiles:user_id ( id, email, name, avatar )
-                `)
-                .eq('organization_id', currentOrgId); // Assuming organization_members has this column based on migration
+                .from('profiles')
+                .select('id, email, full_name, role, avatar_url, created_at')
+                .eq('organization_id', currentOrgId);
 
-            // Note: If table structure is different (e.g. no organization_members yet), handle gracefully
             if (error) {
                 console.error('Error fetching team:', error);
-                // Fallback for demo if table doesn't exist yet
                 setTeamMembers([]);
             } else if (data) {
-                const formatted: TeamMember[] = data.map((m: any) => ({
-                    id: m.id,
-                    email: m.profiles?.email || 'N/A',
-                    role: m.role || 'Member',
-                    status: 'active', // Default for now until status column confirmed
-                    joined_at: m.joined_at,
+                const formatted: TeamMember[] = data.map((p: any) => ({
+                    id: p.id,
+                    email: p.email || 'N/A',
+                    role: p.role || 'Member',
+                    status: 'active', // All profiles with org_id are considered active members
+                    joined_at: p.created_at,
                     profile: {
-                        name: m.profiles?.name || m.profiles?.email?.split('@')[0] || 'Usuario',
-                        avatar_url: m.profiles?.avatar
+                        name: p.full_name || p.email?.split('@')[0] || 'Usuario',
+                        avatar_url: p.avatar_url
                     }
                 }));
                 setTeamMembers(formatted);

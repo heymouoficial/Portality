@@ -12,7 +12,8 @@ import HomeView from './components/HomeView';
 import NotionView from './components/NotionView';
 import RAGView from './components/RAGView';
 import FloatingChat from './components/FloatingChat';
-import { Task, Lead, ViewState, AudioState, ChatMessage, UserProfile, NotionPage, CalendarEvent, Client } from './types';
+import { useAureonLive } from './hooks/useAureonLive';
+import { Task, Lead, ViewState, AudioState, ChatMessage, UserProfile, NotionPage, CalendarEvent, Client, Service } from './types';
 import { THEMES } from './constants';
 import { getCurrentBrand, applyBrandColors } from './config/branding';
 
@@ -48,12 +49,6 @@ const EMAIL_TO_PROFILE: Record<string, string> = {
 
 const SESSION_TIMEOUT_MS = 90 * 60 * 1000; // 90 Minutes
 
-const GLOBAL_LEADS: Lead[] = [
-    { id: '1', initials: 'EL', name: 'Elevat Latam', status: 'Hot', detail: 'Interesado en MVP', color: 'bg-gradient-to-br from-blue-500 to-purple-600' },
-    { id: '2', initials: 'SA', name: 'Studio Alpha', status: 'New', detail: 'Agendó demo', color: 'bg-gray-200 dark:bg-gray-800 !text-gray-600 dark:!text-gray-300' },
-    { id: '3', initials: 'NX', name: 'Nux Agency', status: 'Won', detail: 'Pago recibido', color: 'bg-lime-500 text-black' },
-];
-
 export default function App() {
     const [session, setSession] = useState<any>(null);
     const [loadingSession, setLoadingSession] = useState(true);
@@ -70,10 +65,10 @@ export default function App() {
 
     const [tasks, setTasks] = useState<Task[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
+    const [services, setServices] = useState<Service[]>([]);
     const [notionDocs, setNotionDocs] = useState<NotionPage[]>([]);
     const [trainingMode, setTrainingMode] = useState<{ active: boolean; reason: string }>({ active: false, reason: '' });
     const [events, setEvents] = useState<CalendarEvent[]>([]);
-    const [leads] = useState<Lead[]>(GLOBAL_LEADS);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
 
     // Activity Tracking for 90-min expiry
@@ -183,83 +178,64 @@ export default function App() {
 
     // Load User Data & RAG Context
     useEffect(() => {
-        if (!currentUser) return;
+        if (!currentUser || !session) return;
 
-        const fetchTasks = async () => {
-            try {
-                // Simple query first - avoid complex filters that may fail
-                const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
-                
-                if (error) throw error;
-                
-                if (data && data.length > 0) {
-                    setTasks(data.map(t => ({
-                        id: t.id,
-                        title: t.title,
-                        priority: t.priority || 'medium',
-                        status: t.status || 'todo',
-                        completed: t.completed || false,
-                        tags: t.tags || [],
-                        assignedTo: t.assigned_to || 'MV',
-                        organizationId: t.organization_id || 'ELEVAT'
-                    })));
-                    return;
-                }
-            } catch (err) {
-                console.log('[Tasks] DB not available, using fallback');
+        const fetchAllData = async () => {
+            // Fetch Tasks
+            const { data: tasksData, error: tasksError } = await supabase
+                .from('tasks')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (tasksError) {
+                console.error('[Supabase] Error fetching tasks:', tasksError);
+                setTasks([]); // Set to empty on error, no mock data
+            } else {
+                setTasks(tasksData.map(t => ({
+                    id: t.id,
+                    title: t.title,
+                    priority: t.priority || 'medium',
+                    status: t.status || 'todo',
+                    completed: t.completed || false,
+                    tags: t.tags || [],
+                    assignedTo: t.assigned_to || 'MV',
+                    organizationId: t.organization_id || 'ELEVAT'
+                })));
+            }
+
+            // Fetch Clients
+            const { data: clientsData, error: clientsError } = await supabase
+                .from('clients')
+                .select('*');
+
+            if (clientsError) {
+                console.error('[Supabase] Error fetching clients:', clientsError);
+                setClients([]); // Set to empty on error
+            } else {
+                setClients(clientsData || []);
+            }
+
+            // Fetch Services
+            const { data: servicesData, error: servicesError } = await supabase
+                .from('services')
+                .select('*');
+
+            if (servicesError) {
+                console.error('[Supabase] Error fetching services:', servicesError);
+                setServices([]);
+            } else {
+                setServices(servicesData || []);
             }
             
-            // Fallback Mock - Multi-Org Tasks
-            setTasks([
-                // Elevat Tasks
-                { id: 't1', title: 'Reunión Clínica Pro Salud', priority: 'high', status: 'todo', completed: false, tags: ['Cliente'], assignedTo: 'AC', organizationId: 'elevat' },
-                { id: 't2', title: 'Propuesta Your Sign World', priority: 'medium', status: 'todo', completed: false, tags: ['Ventas'], assignedTo: 'AC', organizationId: 'elevat' },
-                { id: 't3', title: 'Estrategia ÁGORA Q1', priority: 'medium', status: 'todo', completed: false, tags: ['Estrategia'], assignedTo: 'AC', organizationId: 'elevat' },
-                { id: 't4', title: 'Web Directorist (Elementor)', priority: 'high', status: 'todo', completed: false, tags: ['Web'], assignedTo: 'CM', organizationId: 'elevat' },
-                
-                // Multiversa Lab Tasks (Owner)
-                { id: 'm1', title: 'Infraestructura Portality VPS', priority: 'high', status: 'in-progress', completed: false, tags: ['Lab', 'Infra'], assignedTo: 'MV', organizationId: 'multiversa' },
-                { id: 'm2', title: 'Definir Roadmap Hydra', priority: 'medium', status: 'todo', completed: false, tags: ['Strategy'], assignedTo: 'AS', organizationId: 'multiversa' },
+            // Fetch Events
+            const { data: eventsData } = await supabase
+                .from('events')
+                .select('*')
+                .order('start_time', { ascending: true })
+                .limit(5);
 
-                // Runa Script Tasks (Wife/Family)
-                { id: 'r1', title: 'Planificación Semanal', priority: 'medium', status: 'todo', completed: false, tags: ['Home'], assignedTo: 'RS', organizationId: 'runa' },
-                { id: 'r2', title: 'Revisión Presupuesto', priority: 'high', status: 'todo', completed: false, tags: ['Finance'], assignedTo: 'RS', organizationId: 'runa' }
-            ]);
-        };
-        fetchTasks();
-
-        // Load Clients
-        const loadClients = async () => {
-            try {
-                const { data, error } = await supabase.from('clients').select('*');
-                if (error) throw error;
-                if (data && data.length > 0) {
-                    setClients(data);
-                    return;
-                }
-            } catch (err) {
-                console.log('[Clients] DB not available, using fallback');
-            }
-            // Fallback Mock
-            setClients([
-                { id: 'c1', name: 'Clínica Pro Salud', type: 'fixed', status: 'active', logo: '🏥' },
-                { id: 'c2', name: 'Your Sign World', type: 'project', status: 'active', logo: '🪧' },
-                { id: 'c3', name: 'D Mart Parts', type: 'project', status: 'active', logo: '🚗' },
-                { id: 'c4', name: 'Torres Cabrera Law', type: 'fixed', status: 'active', logo: '⚖️' }
-            ]);
-        };
-        loadClients();
-
-        const channel = supabase.channel('tasks_realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
-                fetchTasks();
-            })
-            .subscribe();
-
-        const fetchEvents = async () => {
-            const { data } = await supabase.from('events').select('*').order('start_time', { ascending: true }).limit(5);
-            if (data) {
-                setEvents(data.map(e => ({
+            if (eventsData) {
+                setEvents(eventsData.map(e => ({
                     id: e.id,
                     title: e.title,
                     startTime: new Date(e.start_time),
@@ -269,23 +245,21 @@ export default function App() {
                 })));
             }
         };
-        fetchEvents();
 
-        const loadDocs = async () => {
-            const result = await ragService.getDashboardDocs(currentUser.id);
-            setNotionDocs(result.docs);
-            setTrainingMode({ active: result.trainingMode, reason: result.reason });
-        };
-        loadDocs();
+        fetchAllData();
 
-        // setAccentColor(currentUser.theme); // Removed per user request
-
+        // Realtime Subscription
+        const tasksChannel = supabase.channel('tasks_realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, fetchAllData)
+            .subscribe();
+            
+        // Initial Message
         setMessages([
             { id: Date.now().toString(), role: 'assistant', content: brand.defaultAssistantMessage, timestamp: new Date() }
         ]);
 
         return () => {
-            supabase.removeChannel(channel);
+            supabase.removeChannel(tasksChannel);
         };
     }, [currentUser, session]);
 
@@ -350,7 +324,14 @@ export default function App() {
         setMessages(prev => [...prev, { id: Date.now().toString(), role: 'system', content: `✓ Tarea creada: ${title}`, timestamp: new Date() }]);
     };
 
-
+    // AUREON LIVE VOICE HOOK
+    const { status: aureonStatus, isTalking: aureonIsTalking, toggleVoice: toggleAureonVoice } = useAureonLive({
+        onTaskCreate: handleVoiceTaskCreate,
+        onKnowledgeQuery: async (q) => {
+            const res = await ragService.search(q, currentUser.organizationId);
+            return res.map(d => d.content).join('\n');
+        }
+    });
 
     useEffect(() => {
         const html = document.documentElement;
@@ -442,6 +423,7 @@ export default function App() {
                     {currentView === 'agency' && (
                         <NotionView 
                             clients={clients}
+                            services={services}
                             tasks={tasks.filter(t => t.organizationId === currentOrgId)}
                             onToggleTask={handleToggleTask}
                         />
@@ -493,7 +475,7 @@ export default function App() {
             <AureonDock 
                 activeView={currentView} 
                 onNavigate={setCurrentView} 
-                onVoiceClick={() => alert('Aureon Voice System Iniciado...')} 
+                onVoiceClick={toggleAureonVoice} 
             />
 
             <SettingsPanel

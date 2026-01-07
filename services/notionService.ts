@@ -16,14 +16,9 @@ export const notionService = {
             const webhookUrl = import.meta.env.VITE_NOTION_SYNC_WEBHOOK;
             
             if (!webhookUrl) {
-                // FALLBACK: Simulate provisioning during Beta if webhook is not set
-                console.warn('⚠️ [Notion] VITE_NOTION_SYNC_WEBHOOK not found. Simulating production sync...');
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                
-                return { 
-                    success: true, 
-                    workspaceId: `ntn_mock_${Date.now().toString(16)}`
-                };
+                // STRICT MODE: No mocks allowed in production/core logic.
+                console.error('❌ [Notion] CRITICAL: VITE_NOTION_SYNC_WEBHOOK is missing.');
+                return { success: false, workspaceId: undefined };
             }
 
             const response = await fetch(webhookUrl, {
