@@ -67,10 +67,20 @@ describe('NotionService', () => {
     expect(Array.isArray(events)).toBe(true);
   });
 
-  it('should handle missing token gracefully', async () => {
-    // In our test environment, VITE_NOTION_TOKEN might be set or not.
-    // The current implementation returns empty arrays if !this.client.
+  it('should handle paginated results', async () => {
+    queryMock.mockResolvedValueOnce({
+      results: [{ id: 'page-1', properties: { Name: { title: [{ plain_text: 'Page 1' }] } } }],
+      next_cursor: 'cursor-1',
+      has_more: true,
+    });
+    queryMock.mockResolvedValueOnce({
+      results: [{ id: 'page-2', properties: { Name: { title: [{ plain_text: 'Page 2' }] } } }],
+      next_cursor: null,
+      has_more: false,
+    });
+
     const clients = await notionService.getClients();
-    expect(Array.isArray(clients)).toBe(true);
+    expect(queryMock).toHaveBeenCalledTimes(2);
+    expect(clients.length).toBe(2);
   });
 });

@@ -18,112 +18,110 @@ class NotionService {
     }
 
     /**
+     * Helper to query a Notion database with pagination.
+     */
+    private async queryDatabase(databaseId: string): Promise<any[]> {
+        const client = this.getClient();
+        if (!client) return [];
+
+        let results: any[] = [];
+        let hasMore = true;
+        let cursor: string | undefined = undefined;
+
+        try {
+            while (hasMore) {
+                const response: any = await client.databases.query({
+                    database_id: databaseId,
+                    start_cursor: cursor,
+                });
+                results = [...results, ...response.results];
+                hasMore = response.has_more;
+                cursor = response.next_cursor;
+            }
+            return results;
+        } catch (error) {
+            console.error(`Error querying database ${databaseId}:`, error);
+            return [];
+        }
+    }
+
+    /**
      * Fetches clients from the Notion Clients database.
      */
     async getClients(): Promise<Client[]> {
-        const client = this.getClient();
         const dbId = import.meta.env.VITE_NOTION_DB_CLIENTS;
-        if (!dbId || !client) return [];
+        if (!dbId) return [];
 
-        try {
-            const response = await client.databases.query({ database_id: dbId });
-            // Mapping logic will be implemented in the next task
-            return response.results.map((page: any) => ({
-                id: page.id,
-                name: page.properties.Name?.title[0]?.plain_text || 'Unknown',
-                type: 'fixed',
-                status: 'active'
-            })) as Client[];
-        } catch (error) {
-            console.error('Error fetching clients from Notion:', error);
-            return [];
-        }
+        const results = await this.queryDatabase(dbId);
+        // Mapping logic will be implemented in the next task
+        return results.map((page: any) => ({
+            id: page.id,
+            name: page.properties.Name?.title[0]?.plain_text || 'Unknown',
+            type: 'fixed',
+            status: 'active'
+        })) as Client[];
     }
 
     /**
      * Fetches services from the Notion Services database.
      */
     async getServices(): Promise<Service[]> {
-        const client = this.getClient();
         const dbId = import.meta.env.VITE_NOTION_DB_SERVICES;
-        if (!dbId || !client) return [];
+        if (!dbId) return [];
 
-        try {
-            const response = await client.databases.query({ database_id: dbId });
-            return response.results.map((page: any) => ({
-                id: page.id,
-                name: page.properties.Name?.title[0]?.plain_text || 'Unknown',
-                clientId: ''
-            })) as Service[];
-        } catch (error) {
-            console.error('Error fetching services from Notion:', error);
-            return [];
-        }
+        const results = await this.queryDatabase(dbId);
+        return results.map((page: any) => ({
+            id: page.id,
+            name: page.properties.Name?.title[0]?.plain_text || 'Unknown',
+            clientId: ''
+        })) as Service[];
     }
 
     /**
      * Fetches tasks from the Notion Tasks database.
      */
     async getTasks(): Promise<Task[]> {
-        const client = this.getClient();
         const dbId = import.meta.env.VITE_NOTION_DB_TASKS;
-        if (!dbId || !client) return [];
+        if (!dbId) return [];
 
-        try {
-            const response = await client.databases.query({ database_id: dbId });
-            return response.results.map((page: any) => ({
-                id: page.id,
-                title: page.properties.Name?.title[0]?.plain_text || 'Untitled',
-                priority: 'medium',
-                status: 'todo',
-                completed: false
-            })) as Task[];
-        } catch (error) {
-            console.error('Error fetching tasks from Notion:', error);
-            return [];
-        }
+        const results = await this.queryDatabase(dbId);
+        return results.map((page: any) => ({
+            id: page.id,
+            title: page.properties.Name?.title[0]?.plain_text || 'Untitled',
+            priority: 'medium',
+            status: 'todo',
+            completed: false
+        })) as Task[];
     }
 
     /**
      * Fetches team members from the Notion Team database.
      */
     async getTeam(): Promise<any[]> {
-        const client = this.getClient();
         const dbId = import.meta.env.VITE_NOTION_DB_TEAM;
-        if (!dbId || !client) return [];
+        if (!dbId) return [];
 
-        try {
-            const response = await client.databases.query({ database_id: dbId });
-            return response.results.map((page: any) => ({
-                id: page.id,
-                name: page.properties.Name?.title[0]?.plain_text || 'Unknown',
-                role: 'Member'
-            }));
-        } catch (error) {
-            console.error('Error fetching team from Notion:', error);
-            return [];
-        }
+        const results = await this.queryDatabase(dbId);
+        return results.map((page: any) => ({
+            id: page.id,
+            name: page.properties.Name?.title[0]?.plain_text || 'Unknown',
+            role: 'Member'
+        }));
     }
 
     /**
      * Fetches calendar events from the Notion Calendar database.
      */
     async getCalendar(): Promise<CalendarEvent[]> {
-        const client = this.getClient();
         const dbId = import.meta.env.VITE_NOTION_DB_CALENDAR;
-        if (!dbId || !client) return [];
+        if (!dbId) return [];
 
-        try {
-            const response = await client.databases.query({ database_id: dbId });
-            return response.results.map((page: any) => ({
-                id: page.id,
-                title: page.properties.Name?.title[0]?.plain_text || 'Meeting',
-                startTime: new Date()
-            })) as CalendarEvent[];
-        } catch (error) {
-            console.error('Error fetching calendar from Notion:', error);
-            return [];
-        }
+        const results = await this.queryDatabase(dbId);
+        return results.map((page: any) => ({
+            id: page.id,
+            title: page.properties.Name?.title[0]?.plain_text || 'Meeting',
+            startTime: new Date()
+        })) as CalendarEvent[];
     }
 
     /**
