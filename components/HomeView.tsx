@@ -25,7 +25,11 @@ const HomeView: React.FC<HomeViewProps> = ({ user, tasks, clients, onNavigate, o
         return 'Buenas noches';
     };
 
-    const myTasks = tasks.filter(t => t.assignedTo === user.avatar);
+    const myTasks = tasks.filter(t => 
+        t.assignedTo === user.avatar || 
+        t.assignedTo === user.name ||
+        (user.name && t.assignedTo?.toLowerCase().includes(user.name.toLowerCase()))
+    );
     const pendingTasks = myTasks.filter(t => !t.completed);
     const completedToday = myTasks.filter(t => t.completed).length;
 
