@@ -188,7 +188,7 @@ describe('NotionService', () => {
 
     notionService.startSyncLoop();
     
-    expect(onMock).toHaveBeenCalledWith('postgres_changes', expect.objectContaining({ event: 'UPDATE' }), expect.any(Function));
+    expect(onMock).toHaveBeenCalledWith('postgres_changes', expect.objectContaining({ event: '*' }), expect.any(Function));
 
     // Simulate Supabase Update
     const updateMock = vi.fn().mockResolvedValue({ id: 'task-notion-id' });
@@ -196,6 +196,7 @@ describe('NotionService', () => {
     notionService['getClient']().pages.update = updateMock;
 
     await callback({
+      eventType: 'UPDATE',
       new: { notion_id: 'task-notion-id', title: 'Test Sync', status: 'done' }
     });
 
@@ -205,5 +206,17 @@ describe('NotionService', () => {
         Status: { status: { name: 'done' } }
       })
     }));
+
+    // Simulate Supabase Insert
+    const createMock = vi.fn().mockResolvedValue({ id: 'new-notion-id' });
+    // @ts-ignore
+    notionService['getClient']().pages.create = createMock;
+
+    await callback({
+      eventType: 'INSERT',
+      new: { id: 'local-id', title: 'New Task Sync', priority: 'medium' }
+    });
+
+    expect(createMock).toHaveBeenCalled();
   });
 });

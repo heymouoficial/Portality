@@ -28,14 +28,23 @@ class NotionService {
         console.log('🔄 [Notion Sync] Initializing bidirectional sync loop...');
 
         this.syncSubscription = supabase.channel('notion_sync_tasks')
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' }, async (payload) => {
-                const updatedTask = payload.new as any;
-                
-                // Only sync if the task has a notion_id
-                if (updatedTask.notion_id) {
-                    console.log(`🔄 [Notion Sync] Pushing task update to Notion: ${updatedTask.title}`);
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, async (payload) => {
+                const task = payload.new as any;
+                if (!task) return;
+
+                if (payload.eventType === 'INSERT' && !task.notion_id) {
+                    console.log(`🔄 [Notion Sync] Creating new task in Notion: ${task.title}`);
                     try {
-                        await this.updateTaskStatus(updatedTask.notion_id, updatedTask.status);
+                        const notionPage = await this.createTask(task);
+                        // Update Supabase with new Notion ID to prevent loops
+                        await supabase.from('tasks').update({ notion_id: notionPage.id }).eq('id', task.id);
+                    } catch (error) {
+                        console.error('[Notion Sync] Failed to create task:', error);
+                    }
+                } else if (payload.eventType === 'UPDATE' && task.notion_id) {
+                    console.log(`🔄 [Notion Sync] Pushing task update to Notion: ${task.title}`);
+                    try {
+                        await this.updateTaskStatus(task.notion_id, task.status);
                     } catch (error) {
                         console.error('[Notion Sync] Failed to push update:', error);
                     }

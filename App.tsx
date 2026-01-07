@@ -260,8 +260,9 @@ export default function App() {
         fetchAllData();
 
         // Realtime Subscription
-        const tasksChannel = supabase.channel('tasks_realtime')
+        const channel = supabase.channel('app_realtime')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, fetchAllData)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, fetchAllData)
             .subscribe();
             
         // Initial Message
@@ -270,7 +271,7 @@ export default function App() {
         ]);
 
         return () => {
-            supabase.removeChannel(tasksChannel);
+            supabase.removeChannel(channel);
         };
     }, [currentUser, session]);
 
