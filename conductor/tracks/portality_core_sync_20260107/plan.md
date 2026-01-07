@@ -50,8 +50,8 @@
 - [x] Task: **Sync Logic:** Validate Polling/Push loop stability and concurrency. (syncFromNotion implemented)
 - [x] Task: Conductor - User Manual Verification 'Phase 6.5: Hotfix 3' (Protocol in workflow.md) (5164bbf)
 
-## Phase 6.6: Alpha v1.0 Final Stabilization (Hotfix 4 - UI Deadlocks)
+## Phase 6.6: Alpha v1.0 Final Stabilization (Hotfix 4 - UI Deadlocks) [checkpoint: 3e41b49]
 - [x] Task: **RAGView Fix:** Ensure component renders immediately even on error/empty state. Check `.env` vars. (RAGView updated)
 - [x] Task: **UI Subscription:** Verify `HomeView` re-renders on realtime updates. Add `useEffect` log. (HomeView updated)
 - [x] Task: **Chat Intent Force:** Implement rule-based fallback in `geminiService` to force `client_summary` action for specific queries. (geminiService updated)
-- [x] Task: Conductor - User Manual Verification 'Phase 6.6: Hotfix 4' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 6.6: Hotfix 4' (Protocol in workflow.md) (3e41b49)
