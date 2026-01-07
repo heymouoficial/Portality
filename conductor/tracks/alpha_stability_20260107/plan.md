@@ -18,8 +18,15 @@
 - [x] Task: Update `HomeView` and `NotionView` to apply global filtering based on `currentUser.notionId`. (Impl)
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Identity & Filtering' (Protocol in workflow.md) (4cc9b78)
 
-## Phase 4: Generative UI Expansion
-- [ ] Task: Write tests for intent parsing logic in `geminiService.ts` (detecting requests for summaries vs actions).
-- [ ] Task: Implement `TaskActionCard`, `TeamAvailabilitySnippet`, and `ServiceDetailCard` components.
-- [ ] Task: Update `FloatingChat.tsx` to handle dynamic injection of the expanded component set.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: Generative UI' (Protocol in workflow.md)
+## Phase 4: Generative UI Expansion [checkpoint: 713d2c5]
+- [x] Task: Write tests for intent parsing logic in `geminiService.ts` (detecting requests for summaries vs actions). (Verified)
+- [x] Task: Implement `TaskActionCard`, `TeamAvailabilitySnippet`, and `ServiceDetailCard` components. (Implemented)
+- [x] Task: Update `FloatingChat.tsx` to handle dynamic injection of the expanded component set. (Implemented)
+- [x] Task: Conductor - User Manual Verification 'Phase 4: Generative UI' (Protocol in workflow.md) (713d2c5)
+
+## Phase 6.7: Alpha v1.0 Final Stabilization (Hotfix 5 - Critical UI Sync) [checkpoint: e91aaf8]
+- [x] Task: **Realtime Hook:** Create `useRealtimeData` hook to abstract Supabase subscriptions and ensure reliable state updates in `App.tsx`. (Implemented)
+- [x] Task: **RAGView Fix:** Add fallback error boundary component inside `RAGView` to prevent total crash/hang. Verify Supabase connection. (Implemented)
+- [x] Task: **Generative UI Debug:** Add console logs to `FloatingChat` to trace action parsing. Verify `geminiService` override. (Implemented)
+- [x] Task: **Auth Mapping Verification:** Add UI indicator (toast/log) when user is successfully linked to Notion Team. (Implemented)
+- [x] Task: Conductor - User Manual Verification 'Phase 6.7: Hotfix 5' (Protocol in workflow.md) (e91aaf8)
