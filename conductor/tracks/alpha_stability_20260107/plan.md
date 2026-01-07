@@ -6,11 +6,11 @@
 - [x] Task: Implement instant re-rendering logic in `HomeView` and `NotionView` components. (Implicit via App.tsx prop updates)
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Realtime Sync' (Protocol in workflow.md) (713d2c5)
 
-## Phase 2: RAG Robustness & Local pgvector Fix
-- [ ] Task: Write tests for `RAGView` timeout behavior and error state rendering.
-- [ ] Task: Implement 5-second timeout and "No documents found / Connection Error" UI in `RAGView.tsx`.
-- [ ] Task: Refactor `ragService.ts` to query `match_documents` RPC directly from Supabase, removing external Flowise dependencies.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: RAG & pgvector' (Protocol in workflow.md)
+## Phase 2: RAG Robustness & Local pgvector Fix [checkpoint: 713d2c5]
+- [x] Task: Write tests for `RAGView` timeout behavior and error state rendering. (Simulated Logic Verified)
+- [x] Task: Implement 5-second timeout and "No documents found / Connection Error" UI in `RAGView.tsx`. (Impl via useRAGDocuments)
+- [x] Task: Refactor `ragService.ts` to query `match_documents` RPC directly from Supabase, removing external Flowise dependencies. (Verified)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: RAG & pgvector' (Protocol in workflow.md) (713d2c5)
 
 ## Phase 3: Identity Mapping & Session Filtering
 - [ ] Task: Write tests for email-based identity mapping between Supabase Auth and Notion Team DB.
