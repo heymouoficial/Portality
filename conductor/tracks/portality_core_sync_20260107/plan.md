@@ -55,3 +55,10 @@
 - [x] Task: **UI Subscription:** Verify `HomeView` re-renders on realtime updates. Add `useEffect` log. (HomeView updated)
 - [x] Task: **Chat Intent Force:** Implement rule-based fallback in `geminiService` to force `client_summary` action for specific queries. (geminiService updated)
 - [x] Task: Conductor - User Manual Verification 'Phase 6.6: Hotfix 4' (Protocol in workflow.md) (3e41b49)
+
+## Phase 6.7: Alpha v1.0 Final Stabilization (Hotfix 5 - Critical UI Sync)
+- [ ] Task: **Realtime Hook:** Create `useRealtimeData` hook to abstract Supabase subscriptions and ensure reliable state updates in `App.tsx`.
+- [ ] Task: **RAGView Fix:** Add fallback error boundary component inside `RAGView` to prevent total crash/hang. Verify Supabase connection.
+- [ ] Task: **Generative UI Debug:** Add console logs to `FloatingChat` to trace action parsing. Verify `geminiService` override.
+- [ ] Task: **Auth Mapping Verification:** Add UI indicator (toast/log) when user is successfully linked to Notion Team.
+- [ ] Task: Conductor - User Manual Verification 'Phase 6.7: Hotfix 5' (Protocol in workflow.md)
