@@ -28,11 +28,12 @@
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: RAG & Aureon Optimization' (Protocol in workflow.md)
 
 ## Phase 5: Alpha v1.0 Hotfix & Debugging (Critical)
-- [ ] Task: Fix Realtime UI Sync in `App.tsx` to ensure Supabase updates reflect immediately in UI.
-- [ ] Task: Debug `RAGView.tsx` and `ragService.ts` to fix loading/error states and ensure Supabase Vector fallback works.
-- [ ] Task: Debug `FloatingChat.tsx` to ensure `ClientSummaryCard` injects correctly (Generative UI pattern).
-- [ ] Task: Implement User-Session Mapping: Link Supabase Auth email -> `profiles` table -> Notion 'Team' DB entry.
-- [ ] Task: Overhaul Manual Auth to ensure login redirects to LiquidGlass Dashboard with correct user context.
+- [x] Task: Fix Realtime UI Sync in `App.tsx` to ensure Supabase updates reflect immediately in UI. (e5bc2ba)
+- [x] Task: Debug `RAGView.tsx` and `ragService.ts` to fix loading/error states and ensure Supabase Vector fallback works. (3a38eda)
+- [x] Task: Debug `FloatingChat.tsx` to ensure `ClientSummaryCard` injects correctly (Generative UI pattern). (b623c4e)
+- [x] Task: Implement User-Session Mapping: Link Supabase Auth email -> `profiles` table -> Notion 'Team' DB entry. (App.tsx updated)
+- [x] Task: Overhaul Manual Auth to ensure login redirects to LiquidGlass Dashboard with correct user context. (Verified logic in LoginView/App)
+- [ ] Task: Conductor - User Manual Verification 'Phase 5: Alpha v1.0 Hotfix' (Protocol in workflow.md)
 
 ## Phase 6: UI Hydration & Final Polish
 - [ ] Task: Implement session-aware hydration logic for `Dashboard.tsx`.
