@@ -8,10 +8,10 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Core Notion Integration' (Protocol in workflow.md)
 
 ## Phase 2: Aureon UI Integration & Generative Components (Priority)
-- [ ] Task: Fix Aureon View loading state to ensure RAG (Flowise) interface is visible.
-- [ ] Task: Create `ClientSummaryCard` component with LiquidGlass aesthetic.
-- [ ] Task: Integrate `notionService` into `AureonView` (or relevant chat component) to fetch real client data.
-- [ ] Task: Implement logic for Aureon to render `ClientSummaryCard` based on user query "Active Projects".
+- [x] Task: Fix Aureon View loading state to ensure RAG (Flowise) interface is visible. (c754483)
+- [x] Task: Create `ClientSummaryCard` component with LiquidGlass aesthetic. (c754483)
+- [x] Task: Integrate `notionService` into `AureonView` (or relevant chat component) to fetch real client data. (c754483)
+- [x] Task: Implement logic for Aureon to render `ClientSummaryCard` based on user query "Active Projects". (c754483)
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Aureon UI Integration' (Protocol in workflow.md)
 
 ## Phase 3: Bidirectional Sync Logic
