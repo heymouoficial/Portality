@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { supabase } from '../lib/supabase';
 
 // Mock environment variables
 vi.stubEnv('VITE_NOTION_TOKEN', 'fake-token');
@@ -174,9 +175,35 @@ describe('NotionService', () => {
     expect(updateMock).toHaveBeenCalled();
   });
 
-  it('should initialize sync subscription', () => {
+  it('should initialize sync subscription and handle updates', async () => {
+    let callback: any;
+    const subscribeMock = vi.fn();
+    const onMock = vi.fn().mockImplementation((event, filter, cb) => {
+      callback = cb;
+      return { subscribe: subscribeMock };
+    });
+    
+    // @ts-ignore
+    supabase.channel = vi.fn().mockReturnValue({ on: onMock });
+
     notionService.startSyncLoop();
-    // Since we mock Supabase, we just verify it doesn't crash and starts the flow
-    expect(true).toBe(true);
+    
+    expect(onMock).toHaveBeenCalledWith('postgres_changes', expect.objectContaining({ event: 'UPDATE' }), expect.any(Function));
+
+    // Simulate Supabase Update
+    const updateMock = vi.fn().mockResolvedValue({ id: 'task-notion-id' });
+    // @ts-ignore
+    notionService['getClient']().pages.update = updateMock;
+
+    await callback({
+      new: { notion_id: 'task-notion-id', title: 'Test Sync', status: 'done' }
+    });
+
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({
+      page_id: 'task-notion-id',
+      properties: expect.objectContaining({
+        Status: { status: { name: 'done' } }
+      })
+    }));
   });
 });
