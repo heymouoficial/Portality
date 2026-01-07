@@ -5,6 +5,8 @@ import remarkGfm from 'remark-gfm';
 import { geminiService, AureonMessage, UIAction, AureonContext } from '../services/geminiService';
 import { getCurrentBrand } from '../config/branding';
 import ClientSummaryCard from './ClientSummaryCard';
+import TaskCard from './TaskCard';
+import DataTable from './DataTable';
 import { notionService } from '../services/notionService';
 import { Client, Task, ViewState } from '../types';
 
@@ -139,37 +141,40 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
                     ? tasks.filter(t => !t.completed)
                     : tasks;
                 return (
-                    <div className="mt-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-bold text-gray-400 uppercase">Tareas</span>
-                            <span className="text-xs text-gray-500">{filteredTasks.length} items</span>
+                    <div className="mt-3 space-y-2">
+                        <div className="flex items-center justify-between px-1">
+                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Sincronización Notion</span>
+                            <span className="text-[10px] font-bold text-emerald-400/70">{filteredTasks.length} ITEMS</span>
                         </div>
-                        <div className="space-y-1.5">
-                            {filteredTasks.slice(0, 5).map(task => (
-                                <div 
-                                    key={task.id}
-                                    className="flex items-center gap-2 p-2 rounded-lg bg-black/30 hover:bg-white/5 transition-colors cursor-pointer"
-                                >
-                                    {task.completed ? (
-                                        <CheckCircle2 size={14} className="text-green-500 shrink-0" />
-                                    ) : (
-                                        <Clock size={14} className="text-amber-500 shrink-0" />
-                                    )}
-                                    <span className="text-sm text-white truncate flex-1">{task.title}</span>
-                                    <span className="text-[10px] text-gray-500">{task.assignedTo}</span>
-                                </div>
-                            ))}
-                        </div>
-                        {filteredTasks.length > 5 && (
+                        {filteredTasks.slice(0, 3).map(task => (
+                            <TaskCard 
+                                key={task.id} 
+                                task={task} 
+                                onToggle={(id) => {
+                                    // Handle task toggle if passed through props, or just use notionService
+                                    console.log('Toggling task', id);
+                                }}
+                            />
+                        ))}
+                        {filteredTasks.length > 3 && (
                             <button 
                                 onClick={() => onNavigate?.('agency')}
-                                className="w-full mt-2 py-1.5 text-xs text-center rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                                style={{ color: brand.colors.primary }}
+                                className="w-full py-2.5 text-[10px] font-black uppercase tracking-widest text-center rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all text-gray-400 hover:text-white"
                             >
-                                Ver todas ({filteredTasks.length})
+                                Ver todas las tareas ({filteredTasks.length})
                             </button>
                         )}
                     </div>
+                );
+
+            case 'data_table':
+                return (
+                    <DataTable 
+                        title={action.data?.title}
+                        headers={action.data?.headers || []}
+                        rows={action.data?.rows || []}
+                        icon={<Database size={14} />}
+                    />
                 );
 
             case 'confirm_task':
