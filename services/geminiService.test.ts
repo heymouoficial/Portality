@@ -13,8 +13,21 @@ describe('geminiService', () => {
     expect(actions[0].data.clientId).toBe('123');
   });
 
+  it('should parse action block without trailing newline', () => {
+    const text = 'Summary:```action:client_summary\n{"clientId": "123"}```';
+    // @ts-ignore
+    const { cleanContent, actions } = geminiService.parseActions(text);
+    
+    expect(cleanContent).toBe('Summary:');
+    expect(actions).toHaveLength(1);
+    expect(actions[0].type).toBe('client_summary');
+  });
+
   it('should parse data_table actions', () => {
-    const text = 'Check this table:\n```action:data_table\n{"title": "Stats", "headers": ["A"], "rows": [["B"]]}\n```';
+    const text = `Check this table:
+\`\`\`action:data_table
+{"title": "Stats", "headers": ["A"], "rows": [["B"]]}
+\`\`\``;
     // @ts-ignore
     const { cleanContent, actions } = geminiService.parseActions(text);
     

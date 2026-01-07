@@ -196,8 +196,8 @@ class GeminiService {
         const actions: UIAction[] = [];
         let cleanContent = text;
 
-        // Match action blocks: ```action:type\n{json}\n```
-        const actionRegex = /```action:(\w+)\s*\n([\s\S]*?)\n```/g;
+        // Match action blocks: ```action:type\n{json}``` (flexible whitespace)
+        const actionRegex = /```action:(\w+)\s*([\s\S]*?)```/g;
         let match;
 
         while ((match = actionRegex.exec(text)) !== null) {
