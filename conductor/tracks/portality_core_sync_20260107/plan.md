@@ -23,7 +23,7 @@
 ## Phase 4: RAG Performance & Aureon Optimization
 - [x] Task: Profile current Aureon chat performance and identify RAG connection bottlenecks. (Manual Analysis)
 - [x] Task: Refactor `ragService.ts` to optimize Supabase/Flowise handshake and implement caching where appropriate. (3a38eda)
-- [ ] Task: Implement initial "Agent-Controlled Rendering" logic for Task Cards and Table components.
+- [x] Task: Implement initial "Agent-Controlled Rendering" logic for Task Cards and Table components. (091a099)
 - [ ] Task: Write tests for component rendering triggers and RAG response times.
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: RAG & Aureon Optimization' (Protocol in workflow.md)
 
