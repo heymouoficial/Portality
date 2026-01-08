@@ -308,7 +308,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             {!isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all hover:scale-105 active:scale-95 overflow-hidden border-2 border-white/20"
+                    className="fixed bottom-4 right-4 z-30 w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all hover:scale-105 active:scale-95 overflow-hidden border-2 border-white/20"
                     style={{ 
                         boxShadow: `0 8px 32px ${brand.colors.primary}40, 0 0 60px ${brand.colors.accent}20`
                     }}
@@ -319,7 +319,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
             {/* CHAT PANEL */}
             {isOpen && (
-                <div className="fixed bottom-6 right-6 z-50 w-[360px] md:w-[420px] bg-[#0a0a0b]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300 max-h-[70vh]">
+                <div className="fixed bottom-4 right-4 z-30 w-[calc(100vw-32px)] md:w-[420px] bg-[#0a0a0b]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300 max-h-[70vh]">
                     {/* HEADER */}
                     <div 
                         className="p-4 flex items-center justify-between border-b border-white/5 shrink-0"

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ragService } from './ragService';
+import { ragService } from '../services/ragService';
 
 // Mock Supabase
 vi.mock('../lib/supabase', () => ({

@@ -8,7 +8,7 @@ export class GeminiKeyManager {
         this.pool = [];
         this.currentIndex = 0;
         this.failedKeys = new Map(); // key → timestamp when failed
-        this.COOLDOWN_MS = 60 * 60 * 1000; // 1 hour cooldown (Align with CalculaTú)
+        this.COOLDOWN_MS = 60 * 60 * 1000; // 1 hour cooldown
         // Look for multiple keys in VITE_GEMINI_KEY_POOL (JSON array) or VITE_GEMINI_API_KEY
         const poolStr = import.meta.env.VITE_GEMINI_KEY_POOL;
         const singleKey = import.meta.env.VITE_GEMINI_API_KEY;

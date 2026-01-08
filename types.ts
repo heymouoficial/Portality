@@ -105,7 +105,7 @@ export interface ThemeColors {
   blob2: string;
 }
 
-export type ViewState = 'home' | 'agency' | 'flow' | 'profile' | 'connections' | 'team' | 'board';
+export type ViewState = 'home' | 'agency' | 'flow' | 'profile' | 'connections' | 'team' | 'board' | 'notion' | 'chat';
 
 export enum AudioState {
   IDLE = 'idle',

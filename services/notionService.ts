@@ -51,10 +51,22 @@ class NotionService {
             }
             console.log(`✅ [Notion Sync] Pulled ${tasks.length} tasks.`);
             
-            // Also sync clients and services if needed
-             const clients = await this.getClients();
-             // TODO: specific client sync logic if we have a table for it
-             
+            // Also sync clients
+            const clients = await this.getClients();
+            for (const client of clients) {
+                const sbClient = {
+                    name: client.name,
+                    status: client.status,
+                    company: client.company || 'Retainer',
+                    type: client.type,
+                    notion_id: client.id, // client.id is the Notion ID
+                    organization_id: '392ecec2-e769-4db2-810f-ccd5bd09d92a', // Default Elevat Org
+                };
+
+                const { error } = await supabase.from('clients').upsert(sbClient, { onConflict: 'notion_id' });
+                if (error) console.error('Error syncing client to Supabase:', error);
+            }
+            console.log(`✅ [Notion Sync] Pulled ${clients.length} clients.`);
         } catch (error) {
             console.error('Error in syncFromNotion:', error);
         }

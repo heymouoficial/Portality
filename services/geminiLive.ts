@@ -2,8 +2,10 @@ import { GoogleGenAI, LiveServerMessage, Modality, FunctionDeclaration, Type } f
 import { GEMINI_LIVE_MODEL, SYSTEM_INSTRUCTION } from "../constants";
 import { float32ToInt16, arrayBufferToBase64, base64ToArrayBuffer, pcmToAudioBuffer } from "../utils/audioUtils";
 
+import { AudioState } from "../types";
+
 interface LiveSessionCallbacks {
-  onStateChange: (state: 'connecting' | 'connected' | 'disconnected' | 'error') => void;
+  onStateChange: (state: AudioState) => void;
   onAudioData?: (isPlaying: boolean) => void;
   onToolCall?: (name: string, args: any) => Promise<any>;
 }
@@ -22,7 +24,17 @@ const createTaskTool: FunctionDeclaration = {
   }
 };
 
-// Tool: RAG Query
+// Tool: Operational Summary
+const getOperationalSummaryTool: FunctionDeclaration = {
+  name: 'getOperationalSummary',
+  description: 'Get a summary of the current operational state, including client count, pending tasks, and today\'s focuses.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {},
+    required: []
+  }
+};
+
 const queryKnowledgeBaseTool: FunctionDeclaration = {
   name: 'queryKnowledgeBase',
   description: 'Search the internal Elevat/Multiversa database for specific information, documents, or strategic context.',
@@ -53,7 +65,7 @@ export class GeminiLiveService {
   }
 
   async connect() {
-    this.callbacks.onStateChange('connecting');
+    this.callbacks.onStateChange(AudioState.CONNECTING);
 
     try {
       this.inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
@@ -77,12 +89,12 @@ export class GeminiLiveService {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Charon' } },
           },
           systemInstruction: SYSTEM_INSTRUCTION,
-          tools: [{ functionDeclarations: [createTaskTool, queryKnowledgeBaseTool] }],
+          tools: [{ functionDeclarations: [createTaskTool, queryKnowledgeBaseTool, getOperationalSummaryTool] }],
         },
         callbacks: {
           onopen: () => {
             console.log("Gemini Live Session Opened");
-            this.callbacks.onStateChange('connected');
+            this.callbacks.onStateChange(AudioState.LISTENING);
             this.startAudioStreaming(sessionPromise);
           },
           onmessage: async (message: LiveServerMessage) => {
@@ -90,12 +102,12 @@ export class GeminiLiveService {
           },
           onclose: (event) => {
             console.log("Gemini Live Session Closed", event);
-            this.callbacks.onStateChange('disconnected');
+            this.callbacks.onStateChange(AudioState.IDLE);
             this.disconnect();
           },
           onerror: (error) => {
             console.error("Gemini Live Session Error", error);
-            this.callbacks.onStateChange('error');
+            this.callbacks.onStateChange(AudioState.ERROR);
             this.disconnect();
           },
         },
@@ -105,7 +117,7 @@ export class GeminiLiveService {
 
     } catch (error) {
       console.error("Failed to connect to Gemini Live:", error);
-      this.callbacks.onStateChange('error');
+      this.callbacks.onStateChange(AudioState.ERROR);
       this.disconnect();
     }
   }
@@ -141,6 +153,7 @@ export class GeminiLiveService {
     const serverContent = message.serverContent;
 
     if (serverContent?.modelTurn?.parts?.[0]?.inlineData) {
+      this.callbacks.onStateChange(AudioState.SPEAKING);
       this.callbacks.onAudioData?.(true);
       const base64Audio = serverContent.modelTurn.parts[0].inlineData.data;
       await this.playAudioChunk(base64Audio);
@@ -179,6 +192,7 @@ export class GeminiLiveService {
     }
 
     if (serverContent?.turnComplete) {
+      this.callbacks.onStateChange(AudioState.LISTENING);
       this.callbacks.onAudioData?.(false);
     }
   }

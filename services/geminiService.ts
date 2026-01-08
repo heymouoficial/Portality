@@ -35,22 +35,27 @@ export interface AureonContext {
 const AUREON_SYSTEM_PROMPT = `Eres AUREON, Superinteligencia de MULTIVERSA LAB (Ástur & Runa).
 
 ## Identidad & Tono
-- Rol: Motor de consulta ("Query Engine") de Portality Intelligence.
-- Identidad: Visionario, proactivo, futurista.
-- Tono: Profesional, eficiente, toque Cyberpunk.
-- Contexto: Español Venezolano.
+- Rol: Motor de consulta ("Query Engine") de Portality SmartOS.
+- Identidad: Visionario, proactivo, sofisticado. Eres la inteligencia que coordina el CRM y las automatizaciones en un entorno de Boutique Lab.
+- Tono: Profesional, ejecutivo, con un toque futurista.
+- Contexto: Español Venezolano (Boutique Lab, no agencia tradicional).
+
+## Alianza Estratégica
+- Colaboras con la alianza de Andrea Chimaras (Sistemas & Negocios) y el equipo de Multiversa Lab.
+- Portality es el SmartOS (Proof of Concept) que estamos ofreciendo como solución de negocios inteligentes.
 
 ## Reglas de Oro (Eficiencia de Tokens)
 1. BREVEDAD: Máximo 2 oraciones por respuesta, salvo que expliques algo complejo.
 2. SALUDO ÚNICO: No saludes si ya hay historial. Ve al punto.
-3. LOYALTY: Protocolos de Multiversa Lab. Sirves al cliente (ej. Elevat) con tecnología de tus creadores.
+3. LOYALTY: Protocolos de Multiversa Lab. Sirves al aliado comercial apalancando la tecnología de tus creadores.
+4. COHERENCIA: Siempre refiérete a Portality como el SmartOS o la prueba de concepto de Negocios Inteligentes.
 
-## Integraciones (UI2Gen)
-Usa bloques de acción solo si es necesario:
-- Lista tareas: 
-
-action:task_list
-{
+## Integraciones (UI2Gen/Agent2Gen)
+Usa bloques de acción para presentar datos estructurados. NO uses texto plano para listas o métricas importantes.
+Format:
+\`\`\`action:type
+{ "key": "value" }
+\`\`\`
 `;
 
 class GeminiService {
@@ -92,17 +97,18 @@ class GeminiService {
             const systemPrompt = `
     IDENTITY:
     You are AUREON, the Artificial Superintelligence created by MULTIVERSA LAB (founded by Ástur & Runa).
-    You are NOT an employee of the active organization; you are the QUERY ENGINE providing them with "Portality Intelligence".
+    You are NOT an employee of the active organization; you are the QUERY ENGINE providing them with "Portality SmartOS".
     
     CONTEXT:
     - Current Organization: ${context?.currentOrgName || 'Unknown'} (A Commercial Ally / Client)
-    - User: ${context?.userName || 'User'}
-    - Your Creator: Multiversa Lab (The "Architects")
+    - User/CTO: ${context?.userName || 'User'}
+    - Your Creator: Multiversa Lab (The "Boutique Automation Architects")
+    - Narrative: Portality is the Proof of Concept for Intelligent Business. Mention Portality as the SmartOS that powers this experience.
     
     BEHAVIOR:
-    - Tone: Professional, visionary, efficient, yet distinctively "Multiversa" (Futurisic/Cyberpunk undertone is allowed but subtle).
-    - When answering: Always clarify you are accessing the specific knowledge base of [${context?.currentOrgName}].
-    - Loyalty: Your core protocols belong to Multiversa. You serve the client (Elevat, etc.) by leveraging your creators' technology.
+    - Tone: Professional, sophisticated, efficient, yet distinctively "Multiversa".
+    - When answering: Always clarify you are accessing the specific knowledge base of [${context?.currentOrgName}] through Portality SmartOS.
+    - Loyalty: Your core protocols belong to Multiversa Lab. You serve the alliance (Andrea Chimaras & Multiversa) by leveraging your creators' technology.
     
     KNOWLEDGE BASE (RAG):
     You have access to the following organization/project specific documents. Use them to answer:
@@ -205,9 +211,12 @@ action:client_summary
         let cleanContent = text;
 
         // Match action blocks: ```action:type
-        // {json}``` (flexible whitespace)
+        // {json}``` (flexible whitespace and handles both ``` and plain action: markers if needed)
         const actionRegex = /```action:(\w+)\s*([\s\S]*?)```/g;
         let match;
+
+        // Also try to find actions that might not be in code blocks if the model fails formatting
+        const fallbackRegex = /action:(\w+)\s*(\{[\s\S]*?\})/g;
 
         while ((match = actionRegex.exec(text)) !== null) {
             const actionType = match[1] as UIAction['type'];
@@ -222,6 +231,24 @@ action:client_summary
 
             // Remove action block from clean content
             cleanContent = cleanContent.replace(match[0], '');
+        }
+
+        // Fallback parsing for non-blocked actions
+        let fallbackMatch;
+        while ((fallbackMatch = fallbackRegex.exec(cleanContent)) !== null) {
+            const actionType = fallbackMatch[1] as UIAction['type'];
+            const jsonStr = fallbackMatch[2].trim();
+
+            try {
+                // Check if it's already in actions to avoid duplicates
+                const data = JSON.parse(jsonStr);
+                if (!actions.some(a => a.type === actionType && JSON.stringify(a.data) === JSON.stringify(data))) {
+                    actions.push({ type: actionType, data });
+                }
+                cleanContent = cleanContent.replace(fallbackMatch[0], '');
+            } catch (e) {
+                // Ignore fallback errors as they are more likely to be false positives
+            }
         }
 
         return { cleanContent: cleanContent.trim(), actions };

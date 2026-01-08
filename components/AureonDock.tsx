@@ -10,14 +10,14 @@ interface AureonDockProps {
 
 const AureonDock: React.FC<AureonDockProps> = ({ activeView, onNavigate, onVoiceClick }) => {
     const items = [
-        { id: 'dashboard' as ViewState, icon: <LayoutGrid size={22} />, label: 'Home' },
+        { id: 'home' as ViewState, icon: <LayoutGrid size={22} />, label: 'Home' },
         { id: 'agency' as ViewState, icon: <Database size={22} />, label: 'Datos' },
         { id: 'flow' as ViewState, icon: <Zap size={22} />, label: 'RAG' },
         { id: 'chat' as ViewState, icon: <MessageSquare size={22} />, label: 'Chat' },
     ];
 
     return (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md md:hidden">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 w-[90%] max-w-md md:hidden">
             {/* DOCK CONTAINER */}
             <div className="relative flex items-center justify-between px-6 py-4 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                 
@@ -57,7 +57,7 @@ const AureonDock: React.FC<AureonDockProps> = ({ activeView, onNavigate, onVoice
                             </div>
                         </div>
 
-                        <span className="text-[10px] font-bold text-emerald-400 tracking-wide uppercase drop-shadow-md">Savara</span>
+                        <span className="text-[10px] font-bold text-emerald-400 tracking-wide uppercase drop-shadow-md">Aureon</span>
                     </button>
 
                     {items.slice(2, 4).map((item) => (

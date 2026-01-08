@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { geminiService } from './geminiService';
+import { geminiService } from '../services/geminiService';
 
 describe('geminiService', () => {
   it('should parse client_summary actions', () => {
