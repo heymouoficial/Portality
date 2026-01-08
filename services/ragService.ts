@@ -107,18 +107,69 @@ export const ragService = {
     },
 
     async ingestFile(file: File, organizationId: string | undefined, onStatus?: (status: string) => void): Promise<KnowledgeSource> {
-        return new Promise((resolve) => {
-            const isTextBased = file.type.includes('text') || file.name.endsWith('.md') || file.name.endsWith('.json');
-            if (isTextBased) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const content = e.target?.result as string;
-                    this.ingestDocument(file.name, content, 'file', organizationId, 'txt', onStatus).then(resolve);
-                };
-                reader.readAsText(file);
-            } else {
-                const trainingContent = `### File: ${file.name}\nBinary data detected. High-level indexing only.`;
-                this.ingestDocument(file.name, trainingContent, 'file', organizationId, 'text', onStatus).then(resolve);
+        console.log(`[RAG] Processing file: ${file.name} (${file.type})`);
+        onStatus?.(`Reading file: ${file.name}...`);
+
+        return new Promise(async (resolve, reject) => {
+            try {
+                const extension = file.name.split('.').pop()?.toLowerCase();
+                const arrayBuffer = await file.arrayBuffer();
+
+                let content = '';
+                let format: KnowledgeSource['format'] = 'text';
+
+                if (extension === 'pdf' || file.type === 'application/pdf') {
+                    onStatus?.(`Extracting text from PDF binary...`);
+                    const { getDocument, GlobalWorkerOptions } = await import('pdfjs-dist');
+                    // Use a CDN for the worker to avoid Vite build complexity for now
+                    GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs`;
+                    
+                    const loadingTask = getDocument({ data: arrayBuffer });
+                    const pdf = await loadingTask.promise;
+                    let fullText = '';
+                    
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map((item: any) => item.str).join(' ');
+                        fullText += pageText + '\n\n';
+                        onStatus?.(`Processing PDF: page ${i}/${pdf.numPages}...`);
+                    }
+                    content = fullText;
+                    format = 'text';
+                } 
+                else if (extension === 'docx' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                    onStatus?.(`Extracting text from DOCX binary...`);
+                    const mammoth = await import('mammoth');
+                    const result = await mammoth.extractRawText({ arrayBuffer });
+                    content = result.value;
+                    format = 'text';
+                }
+                else if (file.type.includes('text') || extension === 'md' || extension === 'json' || extension === 'txt') {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const text = e.target?.result as string;
+                        this.ingestDocument(file.name, text, 'file', organizationId, 'text', onStatus).then(resolve);
+                    };
+                    reader.readAsText(file);
+                    return; // Early return as FileReader is async
+                } 
+                else {
+                    onStatus?.(`⚠️ Unsupported format: ${extension}. Indexing as metadata only.`);
+                    content = `### File: ${file.name}\nFormat: ${extension}\nUnsupported binary content. High-level indexing only.`;
+                    format = 'text';
+                }
+
+                if (content) {
+                    const source = await this.ingestDocument(file.name, content, 'file', organizationId, format, onStatus);
+                    resolve(source);
+                } else {
+                    reject(new Error('Failed to extract content from file.'));
+                }
+            } catch (error) {
+                console.error('[RAG] File ingestion error:', error);
+                onStatus?.(`❌ Error indexing ${file.name}`);
+                reject(error);
             }
         });
     },

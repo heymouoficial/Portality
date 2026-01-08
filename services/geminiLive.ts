@@ -47,6 +47,8 @@ const queryKnowledgeBaseTool: FunctionDeclaration = {
   }
 };
 
+import { geminiKeyManager } from "../utils/geminiKeyManager";
+
 export class GeminiLiveService {
   private client: GoogleGenAI;
   private session: any = null;
@@ -58,9 +60,11 @@ export class GeminiLiveService {
   private nextStartTime: number = 0;
   private callbacks: LiveSessionCallbacks;
   private gainNode: GainNode | null = null;
+  private currentKey: string | null = null;
 
   constructor(callbacks: LiveSessionCallbacks) {
-    this.client = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || '' });
+    this.currentKey = geminiKeyManager.getKey();
+    this.client = new GoogleGenAI({ apiKey: this.currentKey || '' });
     this.callbacks = callbacks;
   }
 
@@ -68,32 +72,49 @@ export class GeminiLiveService {
     this.callbacks.onStateChange(AudioState.CONNECTING);
 
     try {
+      // Re-initialize client with a fresh key if previous one failed
+      this.currentKey = geminiKeyManager.getKey();
+      this.client = new GoogleGenAI({ apiKey: this.currentKey || '' });
+
       this.inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
       await this.inputAudioContext.audioWorklet.addModule('/pcm-processor.js');
 
       this.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
 
+      // Explicitly resume contexts (required by many browsers)
+      if (this.inputAudioContext.state === 'suspended') await this.inputAudioContext.resume();
+      if (this.outputAudioContext.state === 'suspended') await this.outputAudioContext.resume();
+
       // Create Gain Node to boost volume
       this.gainNode = this.outputAudioContext.createGain();
-      this.gainNode.gain.value = 3.0; // Boost volume by 300%
+      this.gainNode.gain.value = 3.0; 
       this.gainNode.connect(this.outputAudioContext.destination);
 
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const constraints = {
+        audio: {
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      };
+
+      this.stream = await navigator.mediaDevices.getUserMedia(constraints);
 
       const sessionPromise = this.client.live.connect({
         model: GEMINI_LIVE_MODEL,
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            // Charon is a deep male voice suitable for a system persona
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Charon' } },
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoide' } }, // Aoide is often clearer/more melodic
           },
           systemInstruction: SYSTEM_INSTRUCTION,
           tools: [{ functionDeclarations: [createTaskTool, queryKnowledgeBaseTool, getOperationalSummaryTool] }],
         },
         callbacks: {
           onopen: () => {
-            console.log("Gemini Live Session Opened");
+            console.log("Gemini Live Session Opened with key:", this.currentKey?.slice(0, 5));
             this.callbacks.onStateChange(AudioState.LISTENING);
             this.startAudioStreaming(sessionPromise);
           },
@@ -107,6 +128,7 @@ export class GeminiLiveService {
           },
           onerror: (error) => {
             console.error("Gemini Live Session Error", error);
+            if (this.currentKey) geminiKeyManager.reportError(this.currentKey);
             this.callbacks.onStateChange(AudioState.ERROR);
             this.disconnect();
           },
@@ -117,6 +139,7 @@ export class GeminiLiveService {
 
     } catch (error) {
       console.error("Failed to connect to Gemini Live:", error);
+      if (this.currentKey) geminiKeyManager.reportError(this.currentKey);
       this.callbacks.onStateChange(AudioState.ERROR);
       this.disconnect();
     }

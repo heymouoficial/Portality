@@ -83,7 +83,7 @@ const ChatView: React.FC<ChatViewProps> = ({ user, organization }) => {
     };
 
     return (
-        <div className="h-[calc(100vh-80px)] flex flex-col p-4 md:p-8 animate-in fade-in duration-700">
+        <div className="h-full flex flex-col p-4 md:p-8 animate-in fade-in duration-700">
             {/* MESSAGES AREA */}
             <div className="flex-1 overflow-y-auto no-scrollbar space-y-6 px-2 md:px-0 pb-10">
                 <div className="flex justify-center mb-10">
@@ -173,7 +173,7 @@ const ChatView: React.FC<ChatViewProps> = ({ user, organization }) => {
             </div>
 
             {/* INPUT AREA */}
-            <form onSubmit={handleSend} className="mt-6 max-w-4xl mx-auto w-full relative group">
+            <form onSubmit={handleSend} className="mt-auto mb-10 md:mb-4 max-w-4xl mx-auto w-full relative group px-2">
                 <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 rounded-[2.5rem] blur opacity-10 group-focus-within:opacity-25 transition-opacity duration-500"></div>
                 <div className="relative liquid-glass bg-[#020205] border border-white/10 rounded-[2.2rem] p-2 flex items-center gap-2">
                     <button type="button" className="p-4 text-gray-500 hover:text-indigo-400 transition-colors">
@@ -187,20 +187,17 @@ const ChatView: React.FC<ChatViewProps> = ({ user, organization }) => {
                         className="flex-1 bg-transparent border-none text-white text-sm focus:ring-0 placeholder:text-gray-600 px-2"
                         disabled={isThinking}
                     />
-                    <div className="flex gap-2 pr-2">
-                        <button type="button" className="w-11 h-11 bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white transition-all">
-                            <Mic size={20} />
-                        </button>
+                    <div className="flex gap-2 pr-1.5">
                         <button 
                             type="submit"
                             disabled={!input.trim() || isThinking}
-                            className={`w-11 h-11 rounded-full flex items-center justify-center text-white shadow-lg transition-all ${
+                            className={`w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg transition-all ${
                                 !input.trim() || isThinking 
                                     ? 'bg-gray-800 text-gray-500 opacity-50 cursor-not-allowed' 
-                                    : 'bg-indigo-500 shadow-indigo-500/30 hover:scale-105 active:scale-95'
+                                    : 'bg-indigo-600 shadow-indigo-600/30 hover:bg-indigo-500 hover:scale-105 active:scale-95'
                             }`}
                         >
-                            {isThinking ? <Loader2 size={18} className="animate-spin" /> : <Send size={20} className="ml-0.5" />}
+                            {isThinking ? <Loader2 size={20} className="animate-spin" /> : <Send size={22} className="ml-0.5" />}
                         </button>
                     </div>
                 </div>

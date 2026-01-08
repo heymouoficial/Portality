@@ -151,7 +151,7 @@ const RAGView: React.FC<RAGViewProps> = ({ organizationId }) => {
                      <label className="cursor-pointer px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl flex items-center gap-2 text-sm font-medium text-white transition-all">
                         <Upload size={16} />
                         Subir Documento
-                        <input type="file" className="hidden" onChange={handleFileUpload} accept=".md,.txt,.json" />
+                        <input type="file" className="hidden" onChange={handleFileUpload} accept=".md,.txt,.json,.pdf,.docx" />
                     </label>
 
                     <button 
